@@ -23,7 +23,8 @@ public void Main(string argument){
 
 public void setAutoPilot(Vector3D coord){
 	
-	
+	string[] data = {};
+	data.add("test");
 	
 }
 

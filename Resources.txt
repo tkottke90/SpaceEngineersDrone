@@ -1,0 +1,11 @@
+References:
+
+	Visual Script Builder: http://dco.pe/vsb/
+	
+	Space Engineers API: http://spaceengineers.io
+	
+	Space Engineers GitHub: https://github.com/KeenSoftwareHouse/SpaceEngineers/tree/master/Sources/Sandbox.Common/ModAPI/Ingame
+	
+	Block Properties: https://forum.keenswh.com/threads/guide-programmable-block-block-properties.7230273/
+	
+	Block Health Script: http://forums.keenswh.com/threads/snippet-get-block-health.7368130/

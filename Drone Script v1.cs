@@ -15,7 +15,9 @@ IMyTextPanel lcdPanels;
 boolean compSuccess = true;
 integer sessionCount = 0;
 string terminalData;
-string newTerminalData;
+string log;
+
+string status = "";
 
 public void Main(string argument){
 	// Initialize Variables
@@ -29,8 +31,7 @@ public void Main(string argument){
 		// Main LCD:
 		lcdMain = (IMyTextPanel) GridTerminalSystem.GetBlocksWithName("LCDStatus");
 		if(lcdMain == null){
-			newTerminalData += "Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDStatus\r\n";
-			Echo("Error Occured - See Custom Data");
+			addErrorMessage("Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDStatus\r\n")
 			compSuccess = false
 		}
 		// Other LCDs
@@ -39,11 +40,40 @@ public void Main(string argument){
 		
 	// Extract terminalData
 
+	List<MyWaypointInfo> waypoints = new List<MyWaypointInfo>();
+	remote.GetWaypointInfo(waypoints);
+	for(int i = 0; i > waypoints.count; i++){
+		string name = waypoints[i].Name;
+		Vector3D coords = waypoints[i].Coords;
+		writeToLCD(lcdMain,(name + ":\r\n"),true);
+		writeToLCD(lcdMain,(coords + "\r\n"),true);
+	}
 
 	// End of Run
-	writeToLCD()
+		// Write Any Error Messages
+		if(log.length > 0){writeToLCD(lcdMain,log,true);}
 }
 
+/*
+	Terminal Data:
+	- Origin
+	- Sesson Count 
+	- 
+
+
+ */
+
+public void addErrorMessage(string error){
+	log += error + "\r\n";
+	Echo("Error Occured - See Custom Data");
+}
+
+public boolean setTextPanel(IMyTextPanel lcd, string info){
+	switch(lcd){
+		default:
+			writeToLCD(lcd,"Custom Panel",true);
+	}
+}
 
 public void setAutoPilot(Vector3D coord){
 	

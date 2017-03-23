@@ -10,4 +10,6 @@ References:
 	
 	Block Health Script: http://forums.keenswh.com/threads/snippet-get-block-health.7368130/
 
-    PB Quick Tips: https://www.forsomedefinition.com/space-engineers/scripting/programmable-block-tips/
+    	PB Quick Tips: https://www.forsomedefinition.com/space-engineers/scripting/programmable-block-tips/
+	
+	Reddit Post: https://www.reddit.com/r/spaceengineers/comments/60yd31/is_there_any_decent_tutorial_on_scripting_in_se/

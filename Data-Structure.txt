@@ -1,0 +1,28 @@
+** Drone Data Structures **
+
+* Drone Data *
+Origin: GPS(X,Y,Z)
+Damage: 100%
+Current Waypoint: GPS(X,Y,Z)
+Max Distance: Distance
+
+
+* PB Status "Blackbox" * [Stored in secure location?]
+PB Run Count: Number
+Status: String (Idle, Working, Processing, Escaping, )
+Current Location: GPS(X,Y,Z)
+Damage: Percent
+Current Waypoint: GPS(X,Y,Z) or null
+Asteroid Sensor: On/Off
+Ship Sensor: On/Off
+
+
+* Previous Locations *
+ID: Number
+Waypoint: GPS(X,Y,Z)
+Fitness: Level of Fitness
+
+* Asteriod Locations * [Stored in Astroid Sensor]
+
+
+* Ship Locations * [Stored in Ship Sensor]

@@ -40,18 +40,20 @@ public void Main(string argument){
 		
 	// Extract terminalData
 
-	List<MyWaypointInfo> waypoints = new List<MyWaypointInfo>();
-	remote.GetWaypointInfo(waypoints);
-	for(int i = 0; i > waypoints.count; i++){
-		string name = waypoints[i].Name;
-		Vector3D coords = waypoints[i].Coords;
-		writeToLCD(lcdMain,(name + ":\r\n"),true);
-		writeToLCD(lcdMain,(coords + "\r\n"),true);
+	List<MyWaypointInfo> waypoints = new List<MyWaypointInfo>(); 
+	remote.GetWaypointInfo(waypoints); 
+	for(int i = 0; i < waypoints.Count; i++){ 
+		string name = waypoints[i].Name; 
+		Vector3D coords = waypoints[i].Coords; 
+		writeToLCD(lcdMain,(i + ")" + name + ":\r\n"),true); 
+		writeToLCD(lcdMain,(coords.ToString() + "\r\n"),true); 
 	}
+
 
 	// End of Run
 		// Write Any Error Messages
 		if(log.length > 0){writeToLCD(lcdMain,log,true);}
+		// Input 
 }
 
 /*

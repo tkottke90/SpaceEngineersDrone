@@ -34,6 +34,14 @@ Example Future Tasks:
 		[] Improve Drone Combat Strategies
 			- Strafing
 			- 3D escape
+
+	- Notes 3/23:
+		- Difference between AI and Algorithm
+			 - Algorithm
+			 	- Set of commands that need to be repeated to complete an outcome
+			 - AI
+			 	- Algorithm that preditcts and adapts predictions based on behavior
+				  
 ### 3D Escape:
 		- Current remote control AutoPilot functionality has a Remote Control reach it's destination, then change its orientation before
 		contiunuing onto it's next waypoint.  These pauses in movement are costly and can cost a drone it's life (negative poor machine 

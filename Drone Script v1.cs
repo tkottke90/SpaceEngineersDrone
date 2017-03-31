@@ -7,6 +7,10 @@
 
 */
 
+// Configuration:										
+
+const DefaultRadius = 5000;
+
 // Variables
 IMyRemoteControl remote;
 IMyTextPanel lcdMain;
@@ -53,7 +57,7 @@ public void Main(string argument){
 	// End of Run
 		// Write Any Error Messages
 		if(log.length > 0){writeToLCD(lcdMain,log,true);}
-		// Input 
+		// Update Drone Data
 }
 
 /*
@@ -65,16 +69,21 @@ public void Main(string argument){
 
  */
 
+public MyWaypointInfo genNewCoord(){
+    Random rnd = new Random();
+
+    int x = rnd.Next(1,DefaultRadius);
+    int y = rnd.Next(1,DefaultRadius);
+    int z = rnd.Next(1,DefaultRadius);
+    
+    Vector3D coord = new Vector3D(x,y,z);
+
+    return new MyWaypointInfo("testCoord",coord);
+}
+
 public void addErrorMessage(string error){
 	log += error + "\r\n";
 	Echo("Error Occured - See Custom Data");
-}
-
-public boolean setTextPanel(IMyTextPanel lcd, string info){
-	switch(lcd){
-		default:
-			writeToLCD(lcd,"Custom Panel",true);
-	}
 }
 
 public void setAutoPilot(Vector3D coord){

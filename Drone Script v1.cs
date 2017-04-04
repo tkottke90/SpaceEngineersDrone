@@ -87,9 +87,9 @@ public void writeToLCD(IMyTextPanel lcd, string output, bool append){
 public MyWaypointInfo genNewCoord(){ 
     Random rnd = new Random(); 
  
-    int x = 0; //genRandomNumber(); 
-    int y = 0; //genRandomNumber(); 
-    int z = 0; //genRandomNumber(); 
+    int x = genRandomNumber(); 
+    int y = genRandomNumber(); 
+    int z = genRandomNumber(); 
      
     Vector3D coord = new Vector3D(x,y,z); 
  
@@ -108,3 +108,5 @@ public int genRandomNumber(){
         return (number * -1); 
     } 
 }
+
+public int fitnessTest(){}

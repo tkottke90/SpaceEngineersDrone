@@ -1,7 +1,7 @@
  
 // Coniguration: 
 int DefaultRadius = 5000; 
-MyWaypointInfo originGPS; 
+Vector3D originGPS; 
 string OriginType; 
 string OriginComm; 
  
@@ -58,24 +58,36 @@ public void getPreferences(){
     }
 
     // Default Radius
-    DefaultRadius = Int32.Parse(prefs[1].Split(':')[1]);
+    DefaultRadius = Int32.Parse(prefs[1].Split('|')[1]);
     // Origin Type
-    OriginType = prefs[2].Split(':')[1];
+    OriginType = prefs[2].Split('|')[1];
     // Origin Comm
-    OriginComm = prefs[3].Split(':')[1];
+    OriginComm = prefs[3].Split('|')[1];
     // Origin GPS
-    if(prefs[4].Split(':')[1] != ""){
+    if(prefs[4].Split('|')[1] != ""){
+        writeToLCD(lcdMain,("prefs[4].Split('|')[1] = " + prefs[4].Split('|')[1]),true);
         originGPS = recoverGPS(prefs[4].Split(':')[1]);
     }else{
-        originGPS = remote.
+        originGPS = remote.GetPosition();
     }
+
+    string updatePrefs = 
+        "* Preferences: * \r\n" + "Operating Radius:" + DefaultRadius + "\r\n"
+        + "OriginGPSType:" + OriginType + "\r\n"
+        + "OriginComm:" + OriginComm + "\r\n"
+        + "OriginGPS:" + originGPS.ToString();
+    Me.CustomData = updatePrefs;
 } 
  
-public MyWaypointInfo recoverGPS(string waypoint){ 
-    writeToLCD(lcdMain, waypoint, false);    
+public Vector3D recoverGPS(string waypoint){ 
+    writeToLCD(lcdMain,("Recover GPS:" + waypoint),true);    
+    string[] coord = waypoint.Split(' ');
 
+    for(int i = 0; i < coord.Length; i++){
+        writeToLCD(lcdMain,(coord[i] + "\r\n"),true);
+    }
 
-    return new MyWaypointInfo(); 
+    return new Vector3D(0,0,0); 
 } 
  
 public void writeToLCD(IMyTextPanel lcd, string output, bool append){  
@@ -88,8 +100,8 @@ public MyWaypointInfo genNewCoord(){
     Random rnd = new Random(); 
  
     int x = genRandomNumber(); 
-    int y = genRandomNumber(); 
-    int z = genRandomNumber(); 
+    int y = 0; //genRandomNumber(); 
+    int z = 0; //genRandomNumber(); 
      
     Vector3D coord = new Vector3D(x,y,z); 
  
@@ -108,5 +120,3 @@ public int genRandomNumber(){
         return (number * -1); 
     } 
 }
-
-public int fitnessTest(){}

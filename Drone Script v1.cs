@@ -46,7 +46,7 @@ public void Main(string argument){
         waypoints.Add(temp);  
         remote.AddWaypoint(temp.Coords,temp.Name);         
     }else{Echo("LCDMain = Null");} 
- 
+    
 } 
  
 public void getPreferences(){ 
@@ -64,29 +64,40 @@ public void getPreferences(){
     // Origin Comm
     OriginComm = prefs[3].Split('|')[1];
     // Origin GPS
-    if(prefs[4].Split('|')[1] != ""){
-        writeToLCD(lcdMain,("prefs[4].Split('|')[1] = " + prefs[4].Split('|')[1]),true);
-        originGPS = recoverGPS(prefs[4].Split(':')[1]);
+    string oGPStemp = prefs[4].Split('|')[1];
+    if(oGPStemp != ""){
+        writeToLCD(lcdMain,("prefs[4].Split('|')[1] = " + oGPStemp + "\n"),true);
+        originGPS = recoverGPS(oGPStemp);
     }else{
         originGPS = remote.GetPosition();
     }
 
     string updatePrefs = 
-        "* Preferences: * \r\n" + "Operating Radius:" + DefaultRadius + "\r\n"
-        + "OriginGPSType:" + OriginType + "\r\n"
-        + "OriginComm:" + OriginComm + "\r\n"
-        + "OriginGPS:" + originGPS.ToString();
+        "* Preferences: * \r\n" + "Operating Radius|" + DefaultRadius + "\r\n"
+        + "OriginGPSType|" + OriginType + "\r\n"
+        + "OriginComm|" + OriginComm + "\r\n"
+        + "OriginGPS|" + originGPS.ToString();
     Me.CustomData = updatePrefs;
 } 
  
 public Vector3D recoverGPS(string waypoint){ 
-    writeToLCD(lcdMain,("Recover GPS:" + waypoint),true);    
-    string[] coord = waypoint.Split(' ');
+    writeToLCD(lcdMain,("Recover GPS:" + waypoint + "\r\n"),true);    
+    string[] coord = waypoint.Split(' ','}','{');
+    writeToLCD(lcdMain,("Recover Count: " + coord.Length + "\r\n"),true);    
 
     for(int i = 0; i < coord.Length; i++){
         writeToLCD(lcdMain,(coord[i] + "\r\n"),true);
+        
+    // Output:
+    // Recover Count 5
+    // 1) 
+    // 2) X:0
+    // 3) Y:0
+    // 4) Z:0
+    // 5) 
+    
     }
-
+    
     return new Vector3D(0,0,0); 
 } 
  

@@ -14,9 +14,7 @@ string DroneStatus;
     string terminalData;   
     string newTerminalData;  
   
-    // Navigation  
-    Vector3D patrolCoord;  
-    Vector3D targetCoord;  
+    // Navigation   
     
     // Performance
 
@@ -42,7 +40,20 @@ public void Main(string argument){
 //  Main Code //
  
     if(lcdMain != null){  
+        
+        GPSlocation g = new GPSlocation("test",remote.GetPosition());
+        string store = g.ToString();
+        writeToLCD(lcdMain,String.Format("Store = {0}\r\n", store),true);
+                
+        store = store.Trim(new Char[] {'<','>'});
+        string[] temp = store.Split('|');
 
+        writeToLCD(lcdMain,temp[1],true);
+
+        GPSlocation h = new GPSlocation(store);
+        h.name = "test2";
+        writeToLCD(lcdMain,h.ToString(),true);
+        
     }else{
         Echo("LCDMain = Null");
     }  
@@ -69,11 +80,8 @@ public void getPreferences(){
     }else{ 
         originGPS = remote.GetPosition(); 
     } 
-    // Drone Status
+    //Drone Status
     DroneStatus = prefs[5].Split('|')[1]; 
-    writeToLCD(lcdMain,("prefs[5].Split('|')[1] = " + prefs[5].Split('|')[1] + "\r\n"),true); 
-    writeToLCD(lcdMain,("Drone Status: <" + DroneStatus + ">\r\n"),true);
-    writeToLCD(lcdMain,("Drone String Lng: " + DroneStatus.Length),true);
     if(DroneStatus.Length == 0){DroneStatus = "Idle";}
     
  
@@ -100,6 +108,13 @@ public void writeToLCD(IMyTextPanel lcd, string output, bool append){
     	// Applys text to LCD Screens   
     	((IMyTextPanel)lcd).WritePublicText(output,append);   
 	   ((IMyTextPanel)lcd).ShowPublicTextOnScreen();   
+}  
+
+public void writeLineToLCD(IMyTextPanel lcd, string output, bool append){    
+    	// Applys text to LCD Screens    
+    string out = output + "\r\n";
+    	((IMyTextPanel)lcd).WritePublicText(out,append);    
+	   ((IMyTextPanel)lcd).ShowPublicTextOnScreen();    
 }  
 
 public void drawLCDMain(IMyTextPanel lcd){
@@ -131,3 +146,56 @@ public int genRandomNumber(){
         return (number * -1);  
     }  
 }
+
+
+public class GPSlocation { 
+    public string name; 
+    public Vector3D gps; 
+    public int fitness = 0;    
+
+    public GPSlocation (string newName, Vector3D newGPS){ 
+        name = newName; 
+        gps = newGPS;
+    }
+
+    public GPSlocation (string storedGPS){
+        string storeGPS = storedGPS.Trim(new Char[] {'<','>'});
+        string[] attr = storeGPS.Split('|');
+        
+        // Name
+        name = attr[0].Split(':')[1];
+        // GPS
+        gps = recoverGPS(attr[1]);
+        // Fitness
+        int fit; bool fitCheck = Int32.TryParse(attr[2],out fit);
+        if(fitCheck){fitness = fit;}else{fitness = 0;}
+        
+        
+    }
+    
+    public MyWaypointInfo convertToWaypoint(){
+        return new MyWaypointInfo(name,gps);
+    }
+
+    public Vector3D recoverGPS(string waypoint){      
+        waypoint.Trim(new Char[] {'{','}'});
+        string[] coord = waypoint.Split(' ');  
+      
+        double x = double.Parse(coord[0].Split(':')[1]);  
+        double y = double.Parse(coord[1].Split(':')[1]);  
+        double z = double.Parse(coord[2].Split(':')[1]);  
+      
+        return new Vector3D(x,y,z);   
+    }  
+
+    public void fitnessEval(){
+
+    }
+
+    public override string ToString(){
+        string rtnString = String.Format("<name:{0}|{1}|{2}>",name,gps.ToString(),fitness);
+        return rtnString;
+    }
+}
+
+

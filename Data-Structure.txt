@@ -9,7 +9,7 @@ Max Distance: Distance
 
 * PB Status "Blackbox" * [Stored in secure location?]
 PB Run Count: Number
-Status: String (Idle, Working, Processing, Escaping, )
+Status: String (Idle, Working, Processing, Escaping)
 Current Location: GPS(X,Y,Z)
 Damage: Percent
 Current Waypoint: GPS(X,Y,Z) or null

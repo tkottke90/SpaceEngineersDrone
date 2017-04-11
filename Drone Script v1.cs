@@ -27,13 +27,22 @@ public void Main(string argument){
 	   terminalData = Storage;      
 	    
     	// Set Variables    
-		    // Remote Control:    
-	   	 GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(list0);    
+		 // Remote Control:    
+	   	    GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(list0);    
 		    remote = (IMyRemoteControl) list0[0];    
-		    // Main LCD:    
-        lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDStatus");   
-        if(lcdMain == null){newTerminalData +=  "Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDStatus\r\n";}   
-        writeToLCD(lcdMain, "", false); 
+		 // Main LCD:    
+            /* Grab Tagged LCD
+            List<IMyTerminalBlock> list1 = new List<IMyTerminalBlock>(); 
+            GridTerminalSystem.GetBlocksofType<IMyTextPanel>(list1);
+            for(var item in list1){
+                if(item.CustomName.Contains("[lcdMain]")){
+                    lcdMain = item;
+                    break;
+                }
+            }
+             */
+            lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDStatus");   
+            lcdMain != null ? writeToLCD(lcdMain, "", false) : newTerminalData +=  "Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDStatus\r\n";    
         // Other LCDs:     
     Origin = new GPSlocation("Origin",remote.GetPosition());
     getPreferences();     
@@ -47,7 +56,7 @@ public void Main(string argument){
  
          
     }else{ 
-        Echo("LCDMain = Null"); 
+        Echo("LCDMain = Null\r\n Cannot Execute Script "); 
     }   
  
 // Runtime End // 
@@ -104,17 +113,7 @@ public void getPreferences(){
         + "OriginGPS|" + Origin.ToString() + "\r\n" 
         + "DroneStatus|" + DroneStatus; 
     Me.CustomData = updatePrefs;  
-}   
-   
-public Vector3D recoverGPS(string waypoint){      
-    string[] coord = waypoint.Split(' ','}','{');  
-      
-    double x = double.Parse(coord[1].Split(':')[1]);  
-    double y = double.Parse(coord[2].Split(':')[1]);  
-    double z = double.Parse(coord[3].Split(':')[1]);  
-      
-    return new Vector3D(x,y,z);   
-}   
+}     
    
 public void writeToLCD(IMyTextPanel lcd, string output, bool append){    
     	// Applys text to LCD Screens    

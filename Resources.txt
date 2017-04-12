@@ -13,3 +13,7 @@ References:
     	PB Quick Tips: https://www.forsomedefinition.com/space-engineers/scripting/programmable-block-tips/
 	
 	Reddit Post: https://www.reddit.com/r/spaceengineers/comments/60yd31/is_there_any_decent_tutorial_on_scripting_in_se/
+
+	3D Graph Online: https://plot.ly/create/?fid=bar-chart-excel:2
+
+	FormatException Class: https://msdn.microsoft.com/en-us/library/system.formatexception(v=vs.110).aspx

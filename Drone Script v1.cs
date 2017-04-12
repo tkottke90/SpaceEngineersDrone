@@ -66,14 +66,6 @@ public void getPreferences(){
 
     writeToLine(lcdMain,"",true);
 
-    string storeGPS = prefs[2].Split('|')[1];
-    writeToLine(lcdMain,storeGPS,true);
-    storeGPS = storeGPS.Trim(new Char[] {'<','>'});
-    writeToLine(lcdMain,storeGPS,true);  
-    string[] attr = storeGPS.Split('^'); 
-
-    writeToLine(lcdMain,(attr[3]),true);
-
 
     // Default Radius  
     DefaultRadius = Int32.Parse(prefs[1].Split('|')[1]);  
@@ -172,13 +164,13 @@ public class GPSlocation {
         // Fitness 
         int fit; bool fitCheck = Int32.TryParse(attr[2],out fit); 
         if(fitCheck){fitness = fit;}else{fitness = 0;} 
-        //if(attr.Length == 4){
-          //string[] customAttr = attr[3].Split('$');
-          //for(int i = 0; i < customAttr.Length; i++){
-                //string[] temp = customAttr[i].Split(':');
+        if(attr.Length == 4){
+          string[] customAttr = attr[3].Split('$');
+          foreach(string str in customAttr){
+                string[] temp = str.Split(':');
                 //customInfo.Add(temp[0],temp[1]);
-            //}
-        //}
+            }
+        }
     } 
      
     public MyWaypointInfo convertToWaypoint(){ 

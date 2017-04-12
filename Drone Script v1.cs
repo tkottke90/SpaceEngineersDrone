@@ -27,22 +27,13 @@ public void Main(string argument){
 	   terminalData = Storage;      
 	    
     	// Set Variables    
-		 // Remote Control:    
-	   	    GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(list0);    
+		    // Remote Control:    
+	   	 GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(list0);    
 		    remote = (IMyRemoteControl) list0[0];    
-		 // Main LCD:    
-            /* Grab Tagged LCD
-            List<IMyTerminalBlock> list1 = new List<IMyTerminalBlock>(); 
-            GridTerminalSystem.GetBlocksofType<IMyTextPanel>(list1);
-            for(var item in list1){
-                if(item.CustomName.Contains("[lcdMain]")){
-                    lcdMain = item;
-                    break;
-                }
-            }
-             */
-            lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDStatus");   
-            lcdMain != null ? writeToLCD(lcdMain, "", false) : newTerminalData +=  "Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDStatus\r\n";    
+		    // Main LCD:    
+        lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDStatus");   
+        if(lcdMain == null){newTerminalData +=  "Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDStatus\r\n";}   
+        writeToLCD(lcdMain, "", false); 
         // Other LCDs:     
     Origin = new GPSlocation("Origin",remote.GetPosition());
     getPreferences();     
@@ -56,7 +47,7 @@ public void Main(string argument){
  
          
     }else{ 
-        Echo("LCDMain = Null\r\n Cannot Execute Script "); 
+        Echo("LCDMain = Null"); 
     }   
  
 // Runtime End // 
@@ -89,7 +80,7 @@ public void getPreferences(){
     // Origin GPS  
                                                                                                         //Origin = new GPSlocation("Origin",remote.GetPosition());
     string oGPS = prefs[2].Split('|')[1];
-    if(oGPS == ""){  
+    if(prefs[2].Length <= 12){  
         Origin = new GPSlocation("Origin",remote.GetPosition());
         Origin.customInfo.Add("OriginType","Stationary");  
         Origin.customInfo.Add("OriginComm", "none");
@@ -113,7 +104,7 @@ public void getPreferences(){
         + "OriginGPS|" + Origin.ToString() + "\r\n" 
         + "DroneStatus|" + DroneStatus; 
     Me.CustomData = updatePrefs;  
-}     
+} 
    
 public void writeToLCD(IMyTextPanel lcd, string output, bool append){    
     	// Applys text to LCD Screens    
@@ -181,13 +172,13 @@ public class GPSlocation {
         // Fitness 
         int fit; bool fitCheck = Int32.TryParse(attr[2],out fit); 
         if(fitCheck){fitness = fit;}else{fitness = 0;} 
-        if(attr.Length == 4){
-          string[] customAttr = attr[3].Split('$');
-          for(int i = 0; i < customAttr.Length; i++){
-                string[] temp = customAttr[i].Split(':');
-                customInfo.Add(temp[0],temp[1]);
-            }
-        }
+        //if(attr.Length == 4){
+          //string[] customAttr = attr[3].Split('$');
+          //for(int i = 0; i < customAttr.Length; i++){
+                //string[] temp = customAttr[i].Split(':');
+                //customInfo.Add(temp[0],temp[1]);
+            //}
+        //}
     } 
      
     public MyWaypointInfo convertToWaypoint(){ 

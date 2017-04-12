@@ -1,0 +1,42 @@
+GPS:Radar - Tiny Ship:37264:151339:-132709: - {X:0.5 Y:3 Z:5.5}
+GPS:Radar - Tiny Ship:37262:151337:-132713: - {X:5.5 Y:3 Z:0.5}
+GPS:Radar - Tiny Ship:37564:150622:-133529: - {X:5.5 Y:5.5 Z:0.5}
+GPS:Radar - Tiny Ship:37569:150619:-133521: - {X:5.5 Y:5.5 Z:0.5}
+GPS:Radar - Tiny Ship:37568:150619:-133522: - {X:0.5 Y:5.5 Z:5.5}
+GPS:Radar - Tiny Ship:37569:150623:-133523: - {X:5.5 Y:5.5 Z:0.5}
+GPS:Radar - Tiny Ship:37258:151338:-132712: - {X:0.5 Y:3 Z:5.5}
+GPS:Radar - Large Ship:37356:151375:-132753: - {X:112.5 Y:75 Z:27.5}
+GPS:Radar - Tiny Ship:37267:151384:-132689: - {X:6.5 Y:10.5 Z:4}
+GPS:Radar - Tiny Ship:37299:151410:-132691: - {X:7.5 Y:15 Z:10}
+GPS:Radar - Tiny Ship:37262:151337:-132709: - {X:6.5 Y:4.5 Z:6}
+GPS:Radar - Tiny Ship:37268:151371:-132634: - {X:5 Y:2.5 Z:3}
+GPS:Radar - Tiny Ship:37286:151364:-132664: - {X:3 Y:2.5 Z:4}
+GPS:Radar - Tiny Ship:37282:151334:-132780: - {X:3.5 Y:4 Z:10.5}
+GPS:Radar - Tiny Ship:37567:150621:-133524: - {X:4.5 Y:9 Z:6}
+GPS:Radar - Tiny Ship:37299:151410:-132668: - {X:9 Y:6.5 Z:2.5}
+GPS:Radar - Large Ship:37281:151433:-132873: - {X:82.5 Y:22.5 Z:120}
+GPS:Radar - Tiny Ship:37285:151393:-132874: - {X:7.5 Y:5 Z:7.5}
+GPS:Radar - Small Ship:37288:151432:-132704: - {X:32.5 Y:17.5 Z:15}
+GPS:Radar - Tiny Ship:37280:151333:-132770: - {X:7.5 Y:10 Z:3.5}
+GPS:Radar - Tiny Ship:37273:151357:-132875: - {X:12.5 Y:17.5 Z:2.5}
+GPS:Radar - Tiny Ship:37287:151341:-132883: - {X:2.5 Y:2.5 Z:2.5}
+GPS:Radar - Tiny Ship:37281:151410:-132874: - {X:2.5 Y:7.5 Z:7.5}
+GPS:Radar - Tiny Ship:37287:151340:-132868: - {X:2.5 Y:7.5 Z:7.5}
+GPS:Radar - Tiny Ship:37259:151339:-132707: - {X:5.5 Y:3 Z:0.5}
+GPS:Radar - Tiny Ship:37257:151397:-132665: - {X:1 Y:0.5 Z:0.5}
+GPS:Radar - Massive unknown object:42613:147788:-129714: - {X:512 Y:512 Z:512}
+GPS:Radar - Unknown object:35399:142334:-134776: - {X:512 Y:512 Z:512}
+GPS:Radar - Massive Asteroid:39759:151628:-130483: - {X:512 Y:512 Z:512}
+GPS:Radar - Massive Asteroid:32458:151740:-133345: - {X:512 Y:512 Z:512}
+GPS:Radar - Unknown object:31687:148725:-137268: - {X:256 Y:256 Z:256}
+GPS:Radar - Unknown object:32025:144776:-133024: - {X:256 Y:256 Z:256}
+GPS:Radar - Huge Station:37271:151382:-132684: - {X:137.5 Y:140 Z:317.5}
+GPS:Radar - Massive Asteroid:37307:151452:-132649: - {X:512 Y:512 Z:512}
+GPS:Radar - Huge Asteroid:35622:152349:-135136: - {X:256 Y:256 Z:256}
+GPS:Radar - Moderate unknown object:33334:152322:-134558: - {X:64 Y:64 Z:64}
+GPS:Radar - Unknown object:38682:145654:-139331: - {X:512 Y:512 Z:512}
+GPS:Radar - Moderate Asteroid:37645:151330:-131510: - {X:64 Y:64 Z:64}
+GPS:Radar - Unknown object:42036:155965:-130478: - {X:128 Y:128 Z:128}
+GPS:Radar - Tiny Station:37271:151382:-132684: - {X:2.5 Y:2.5 Z:2.5}
+GPS:Radar - Massive unknown object:36122:147768:-127054: - {X:512 Y:512 Z:512}
+GPS:Radar - Moderate Asteroid:37593:150614:-133545: - {X:64 Y:64 Z:64}

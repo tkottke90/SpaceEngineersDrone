@@ -80,6 +80,7 @@ public void getPreferences(){
         OriginType = "Stationary"; 
     }else{  
         Origin = new GPSlocation(oGPS);
+        writeToLine(lcdMain,Origin.eventLog,true);
         string comm = "";
         string type = "";
         if(Origin.customInfo.TryGetValue("OriginComm", out comm)){OriginComm = comm;}else{OriginComm = "none";}
@@ -149,26 +150,45 @@ public class GPSlocation {
     public int fitness = 0; 
     public Dictionary<string,string> customInfo = new Dictionary<string,string>(); 
  
+    public string eventLog = "";
+
     public GPSlocation (string newName, Vector3D newGPS){  
         name = newName;  
         gps = newGPS; 
     } 
  
     public GPSlocation (string storedGPS){ 
-        string storeGPS = storedGPS.Trim(new Char[] {'<','>'}); 
-        string[] attr = storeGPS.Split('^'); 
-        // Name 
+        char[] charsToTrim = {'<','>'};
+        string storeGPS = storedGPS.Trim(charsToTrim); 
+        //storeGPS = storeGPS.TrimEnd('>');
+         string[] attr = storeGPS.Split('^'); 
+       
+         // Name 
         name = attr[0]; 
-        // GPS 
+       
+         // GPS 
         gps = recoverGPS(attr[1]); 
+        
         // Fitness 
         int fit; bool fitCheck = Int32.TryParse(attr[2],out fit); 
         if(fitCheck){fitness = fit;}else{fitness = 0;} 
+        
+        // Custom Info
         if(attr.Length == 4){
           string[] customAttr = attr[3].Split('$');
           foreach(string str in customAttr){
-                string[] temp = str.Split(':');
-                //customInfo.Add(temp[0],temp[1]);
+                str.Trim(' '); 
+                eventLog += String.Format("str.Length: {0}\r\n",str.Length);
+                if(str.Length > 3 || str != ""){
+                    //string strTest = str.Trim(new Char[]'>'); 
+                    string[] temp = str.Split(':'); 
+                    try{  
+                        customInfo.Add(temp[0],temp[1]); 
+                        eventLog += String.Format("Added: {0} \r\n \tKey: {1}\r\n \tValue: {2}\r\n",str,temp[0],temp[1]); 
+                    }catch(Exception e){  
+                        eventLog += String.Format("Error Adding: {3}\r\n \tKey: {0}\r\n \tValue: {1}\r\n \r\n Stack Trace:\r\n{2}\r\n",temp[0],"value",e.ToString(),str);
+                    } 
+                }
             }
         }
     } 
@@ -197,9 +217,9 @@ public class GPSlocation {
         if(customInfo.Count != 0){    
             foreach (KeyValuePair<string,string> item in customInfo) 
             { 
-                custom += String.Format("${0}:{1}",item.Key,item.Value); 
+                custom += String.Format("{0}:{1}$",item.Key,item.Value); 
             } 
-            custom.Trim(' ');
+            custom = custom.TrimEnd('$');
         }else{custom = "0";}
 
         string rtnString = String.Format("<{0}^{1}^{2}^{3}>",name,gps.ToString(),fitness,custom); 

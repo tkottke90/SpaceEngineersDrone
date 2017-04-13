@@ -1,0 +1,136 @@
+Format: RAW Radar Output
+
+GPS:Radar - Tiny Ship:37264:151339:(132709): - {X:0.5 Y:3 Z:5.5}
+GPS:Radar - Tiny Ship:37262:151337:(132713): - {X:5.5 Y:3 Z:0.5}
+GPS:Radar - Tiny Ship:37564:150622:(133529): - {X:5.5 Y:5.5 Z:0.5}
+GPS:Radar - Tiny Ship:37569:150619:(133521): - {X:5.5 Y:5.5 Z:0.5}
+GPS:Radar - Tiny Ship:37568:150619:(133522): - {X:0.5 Y:5.5 Z:5.5}
+GPS:Radar - Tiny Ship:37569:150623:(133523): - {X:5.5 Y:5.5 Z:0.5}
+GPS:Radar - Tiny Ship:37258:151338:(132712): - {X:0.5 Y:3 Z:5.5}
+GPS:Radar - Large Ship:37356:151375:-132753: - {X:112.5 Y:75 Z:27.5}
+GPS:Radar - Tiny Ship:37267:151384:(132689): - {X:6.5 Y:10.5 Z:4}
+GPS:Radar - Tiny Ship:37299:151410:(132691): - {X:7.5 Y:15 Z:10}
+GPS:Radar - Tiny Ship:37262:151337:(132709): - {X:6.5 Y:4.5 Z:6}
+GPS:Radar - Tiny Ship:37268:151371:(132634): - {X:5 Y:2.5 Z:3}
+GPS:Radar - Tiny Ship:37286:151364:(132664): - {X:3 Y:2.5 Z:4}
+GPS:Radar - Tiny Ship:37282:151334:(132780): - {X:3.5 Y:4 Z:10.5}
+GPS:Radar - Tiny Ship:37567:150621:-133524: - {X:4.5 Y:9 Z:6}
+GPS:Radar - Tiny Ship:37299:151410:-132668: - {X:9 Y:6.5 Z:2.5}
+GPS:Radar - Large Ship:37281:151433:-132873: - {X:82.5 Y:22.5 Z:120}
+GPS:Radar - Tiny Ship:37285:151393:-132874: - {X:7.5 Y:5 Z:7.5}
+GPS:Radar - Small Ship:37288:151432:-132704: - {X:32.5 Y:17.5 Z:15}
+GPS:Radar - Tiny Ship:37280:151333:-132770: - {X:7.5 Y:10 Z:3.5}
+GPS:Radar - Tiny Ship:37273:151357:-132875: - {X:12.5 Y:17.5 Z:2.5}
+GPS:Radar - Tiny Ship:37287:151341:-132883: - {X:2.5 Y:2.5 Z:2.5}
+GPS:Radar - Tiny Ship:37281:151410:-132874: - {X:2.5 Y:7.5 Z:7.5}
+GPS:Radar - Tiny Ship:37287:151340:-132868: - {X:2.5 Y:7.5 Z:7.5}
+GPS:Radar - Tiny Ship:37259:151339:-132707: - {X:5.5 Y:3 Z:0.5}
+GPS:Radar - Tiny Ship:37257:151397:-132665: - {X:1 Y:0.5 Z:0.5}
+GPS:Radar - Massive unknown object:42613:147788:-129714: - {X:512 Y:512 Z:512}
+GPS:Radar - Unknown object:35399:142334:-134776: - {X:512 Y:512 Z:512}
+GPS:Radar - Massive Asteroid:39759:151628:-130483: - {X:512 Y:512 Z:512}
+GPS:Radar - Massive Asteroid:32458:151740:-133345: - {X:512 Y:512 Z:512}
+GPS:Radar - Unknown object:31687:148725:-137268: - {X:256 Y:256 Z:256}
+GPS:Radar - Unknown object:32025:144776:-133024: - {X:256 Y:256 Z:256}
+GPS:Radar - Huge Station:37271:151382:-132684: - {X:137.5 Y:140 Z:317.5}
+GPS:Radar - Massive Asteroid:37307:151452:-132649: - {X:512 Y:512 Z:512}
+GPS:Radar - Huge Asteroid:35622:152349:-135136: - {X:256 Y:256 Z:256}
+GPS:Radar - Moderate unknown object:33334:152322:-134558: - {X:64 Y:64 Z:64}
+GPS:Radar - Unknown object:38682:145654:-139331: - {X:512 Y:512 Z:512}
+GPS:Radar - Moderate Asteroid:37645:151330:-131510: - {X:64 Y:64 Z:64}
+GPS:Radar - Unknown object:42036:155965:-130478: - {X:128 Y:128 Z:128}
+GPS:Radar - Tiny Station:37271:151382:-132684: - {X:2.5 Y:2.5 Z:2.5}
+GPS:Radar - Massive unknown object:36122:147768:-127054: - {X:512 Y:512 Z:512}
+GPS:Radar - Moderate Asteroid:37593:150614:-133545: - {X:64 Y:64 Z:64}
+
+--------------------------------------------------------
+
+Format: XLS Ready
+Tiny Ship	37264	151339	-132709	
+Tiny Ship	37262	151337	-132713	
+Tiny Ship	37564	150622	-133529	
+Tiny Ship	37569	150619	-133521	
+Tiny Ship	37568	150619	-133522	
+Tiny Ship	37569	150623	-133523	
+Tiny Ship	37258	151338	-132712	
+Large Ship	37356	151375	-132753	
+Tiny Ship	37267	151384	-132689	
+Tiny Ship	37299	151410	-132691	
+Tiny Ship	37262	151337	-132709	
+Tiny Ship	37268	151371	-132634	
+Tiny Ship	37286	151364	-132664	
+Tiny Ship	37282	151334	-132780	
+Tiny Ship	37567	150621	-133524	
+Tiny Ship	37299	151410	-132668	
+Large Ship	37281	151433	-132873	
+Tiny Ship	37285	151393	-132874	
+Small Ship	37288	151432	-132704	
+Tiny Ship	37280	151333	-132770	
+Tiny Ship	37273	151357	-132875	
+Tiny Ship	37287	151341	-132883	
+Tiny Ship	37281	151410	-132874	
+Tiny Ship	37287	151340	-132868	
+Tiny Ship	37259	151339	-132707	
+Tiny Ship	37257	151397	-132665	
+Massive unknown object	42613	147788	-129714	
+Unknown object	35399	142334	-134776	
+Massive Asteroid	39759	151628	-130483	
+Massive Asteroid	32458	151740	-133345	
+Unknown object	31687	148725	-137268	
+Unknown object	32025	144776	-133024	
+Huge Station	37271	151382	-132684	
+Massive Asteroid	37307	151452	-132649	
+Huge Asteroid	35622	152349	-135136	
+Moderate unknown object	33334	152322	-134558	
+Unknown object	38682	145654	-139331	
+Moderate Asteroid	37645	151330	-131510	
+Unknown object	42036	155965	-130478	
+Tiny Station	37271	151382	-132684	
+Massive unknown object	36122	147768	-127054	
+Moderate Asteroid	37593	150614	-133545	
+
+--------------------------------------------------------
+
+Format: Script Ready
+<Tiny Ship^{X:37264 Y:151339 Z:(132709)}^0^0>
+<Tiny Ship^{X:37262 Y:151337 Z:(132713)}^0^0>
+<Tiny Ship^{X:37564 Y:150622 Z:(133529)}^0^0>
+<Tiny Ship^{X:37569 Y:150619 Z:(133521)}^0^0>
+<Tiny Ship^{X:37568 Y:150619 Z:(133522)}^0^0>
+<Tiny Ship^{X:37569 Y:150623 Z:(13352)}^0^0>
+<Tiny Ship^{X:37258 Y:151338 Z:(132712)}^0^0>
+<Large Ship^{X:37356 Y:151375 Z:-132753}^0^0>
+<Tiny Ship^{X:37267 Y:151384 Z:(132689)}^0^0>
+<Tiny Ship^{X:37299 Y:151410 Z:(132691)}^0^0>
+<Tiny Ship^{X:37262 Y:151337 Z:(132709)}^0^0>
+<Tiny Ship^{X:37268 Y:151371 Z:(132634)}^0^0>
+<Tiny Ship^{X:37286 Y:151364 Z:(132664)}^0^0>
+<Tiny Ship^{X:37282 Y:151334 Z:(132780)}^0^0>
+<Tiny Ship^{X:37567 Y:150621 Z:-133524}^0^0>
+<Tiny Ship^{X:37299 Y:151410 Z:-132668}^0^0>
+<Large Ship^{X:37281 Y:151433 Z:-132873}^0^0>
+<Tiny Ship^{X:37285 Y:151393 Z:-132874}^0^0>
+<Small Ship^{X:37288 Y:151432 Z:-132704}^0^0>
+<Tiny Ship^{X:37280 Y:151333 Z:-132770}^0^0>
+<Tiny Ship^{X:37273 Y:151357 Z:-132875}^0^0>
+<Tiny Ship^{X:37287 Y:151341 Z:-132883}^0^0>
+<Tiny Ship^{X:37281 Y:151410 Z:-132874}^0^0>
+<Tiny Ship^{X:37287 Y:151340 Z:-132868}^0^0>
+<Tiny Ship^{X:37259 Y:151339 Z:-132707}^0^0>
+<Tiny Ship^{X:37257 Y:151397 Z:-132665}^0^0>
+<Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>
+<Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>
+<Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>
+<Massive Asteroid^{X:32458 Y:151740 Z:-133345}^0^0>
+<Unknown object^{X:31687 Y:148725 Z:-137268}^0^0>
+<Unknown object^{X:32025 Y:144776 Z:-133024}^0^0>
+<Huge Station^{X:37271 Y:151382 Z:-132684}^0^0>
+<Massive Asteroid^{X:37307 Y:151452 Z:-132649}^0^0>
+<Huge Asteroid^{X:35622 Y:152349 Z:-135136}^0^0>
+<Moderate unknown object^{X:33334 Y:152322 Z:-134558}^0^0>
+<Unknown object^{X:38682 Y:145654 Z:-139331}^0^0>
+<Moderate Asteroid^{X:37645 Y:151330 Z:-131510}^0^0>
+<Unknown object^{X:42036 Y:155965 Z:-130478}^0^0>
+<Tiny Station^{X:37271 Y:151382 Z:-132684}^0^0>
+<Massive unknown object^{X:36122 Y:147768 Z:-127054}^0^0>
+<Moderate Asteroid^{X:37593 Y:150614 Z:-133545}^0^0>

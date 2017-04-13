@@ -1,0 +1,43 @@
+Recover GPS:
+Simple script that takes the following string format: {X:0 Y:0 Z:0}.
+Returns a Vector3D object that can be used within Space Engineers Scripts.
+
+It was designed to allow me to store GPS Locations as a string and recover them.  Initially created for 
+my AI Drone script as the script would need to be able to remember GPSlocations between instances of the script
+
+        public Vector3D recoverGPS(string waypoint){      
+            string[] coord = waypoint.Split(' ','}','{');  
+            
+            double x = double.Parse(coord[1].Split(':')[1]);  
+            double y = double.Parse(coord[2].Split(':')[1]);  
+            double z = double.Parse(coord[3].Split(':')[1]);  
+            
+            return new Vector3D(x,y,z);   
+        } 
+
+Radar Conversion:
+Converts Radar output to 2 formats that can be read/used.
+
+1) Usable by GPSlocation Class in Drone Scripts
+2) Tab Delimited format that can be imported into Spreadsheet for advanced analytics
+
+Mod Webpage: http://steamcommunity.com/sharedfiles/filedetails/?id=444539430
+
+** Writen in Java
+
+    String[] splitData = data.split(d.newLine);
+            
+    // Input Str: GPS:Radar - Tiny Ship:37264:151339:(132709): - {X:0.5 Y:3 Z:5.5}
+
+    for(String str:splitData){
+        String[] elem = str.split(":");
+        String name = elem[1].split("-")[1].trim();
+        
+        outData += String.format(("<%1$s^{X:%2$s Y:%3$s Z:%4$s}^0^0>" + d.newLine),name,elem[2],elem[3],elem[4]); 
+
+        // Output: <Origin^{X:0 Y:0 Z:0}^0^OriginType:Stationary$OriginComm:none>
+
+        outDataXLS += String.format(("%1$s\t%2$s\t%3$s\t%4$s\t" + d.newLine),name,elem[2],elem[3],elem[4]);
+
+        // Output: <Origin^{X:0 Y:0 Z:0}^0^OriginType:Stationary$OriginComm:none>
+    }

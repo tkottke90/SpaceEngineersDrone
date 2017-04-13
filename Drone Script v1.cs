@@ -158,6 +158,27 @@ public class GPSlocation {
     } 
  
     public GPSlocation (string storedGPS){ 
+
+        // "<Origin^{X:0 Y:0 Z:0}^0^OriginType:Stationary$OriginComm:none>"
+        /*
+        List:
+            1) Name
+            2) {X:0 Y:0 Z:0}
+            3) 0
+            4) OriginType:Stationary$OriginComm:none
+        
+         */
+
+        /*
+
+        1) char[] charsToTrim = char[] charsToTrim = {'<','>'};
+
+        2) string storeGPS = storedGPS.Trim();
+           storeGPS = storeGPS.Trim(charsToTrim); 
+
+         */
+
+
         char[] charsToTrim = {'<','>'};
         string storeGPS = storedGPS.Trim(charsToTrim); 
         //storeGPS = storeGPS.TrimEnd('>');
@@ -226,3 +247,4 @@ public class GPSlocation {
         return rtnString; 
     } 
 } 
+

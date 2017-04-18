@@ -17,4 +17,9 @@ References:
 	3D Graph Online: https://plot.ly/create/?fid=bar-chart-excel:2
 
 	FormatException Class: https://msdn.microsoft.com/en-us/library/system.formatexception(v=vs.110).aspx
+<<<<<<< HEAD
 
+=======
+	
+	Visual Studio Test Environment Boilerplate: https://wargeeks.org/t/programmable-block-scripting-in-space-engineers/483
+>>>>>>> origin/master

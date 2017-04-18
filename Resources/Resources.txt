@@ -2,7 +2,7 @@ References:
 
 	Visual Script Builder: http://dco.pe/vsb/
 	
-	Space Engineers API: http://spaceengineers.io
+	Space Engineers API: https://bloc97.github.io/SpaceEngineersModAPIDocs/html/b2d609dc-672a-3d90-cdc0-3753ce60d06f.htm
 	
 	Space Engineers GitHub: https://github.com/KeenSoftwareHouse/SpaceEngineers/tree/master/Sources/Sandbox.Common/ModAPI/Ingame
 	
@@ -17,3 +17,4 @@ References:
 	3D Graph Online: https://plot.ly/create/?fid=bar-chart-excel:2
 
 	FormatException Class: https://msdn.microsoft.com/en-us/library/system.formatexception(v=vs.110).aspx
+

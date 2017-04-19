@@ -6,7 +6,9 @@ string DroneStatus;
      
 GPSlocation Origin;     
 GPSlocation Current;   
-       
+
+bool DEBUG = true;
+
 // Variables        
     // Utility       
     int runCount;   
@@ -27,7 +29,7 @@ GPSlocation Current;
   
     // AI Variables 
     int coordSpacing = 200;      
-    int[] genCoordFitness = new int[5]; // [1: Random Coordinate - 2: Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product]     
+    int[] genCoordFitness = new int[6]; // [1:Random Coordinate - 2:Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product - 6: Points of Interest]     
     int attempts = 0;   
        
 public void Main(string argument){        
@@ -42,8 +44,9 @@ public void Main(string argument){
     if(setVariables()){       
         writeToLine(lcdMain,("Runtime Count: " + runCount),true); 
         writeToLine(lcdMain,"",true);  
- 
- 
+        writeToLine(lcdMain,("Error Count: " + errorLog.Count),true);
+        if(errorLog.Count > 0){writeToLine(lcdMain,("\tError in script, see lcdMain Custom Data for Details"),true);}
+        Current = new GPSlocation("Origin",remote.GetPosition()); 
         // Get Status and Respond  
       switch(DroneStatus){   
             case "Idle":   
@@ -61,15 +64,15 @@ public void Main(string argument){
                 DroneStatus = "Idle";  
                 break; 
         }    
-  
-             
+        
+        if(DEBUG){lcdMain.CustomData = "";}
+        for(int i = 0; i < errorLog.Count; i++){lcdMain.CustomData += String.Format("{0}) {1}", i, errorLog[i]);}         
     }else{     
-        Echo("Error Initilizing");     
+        Echo("Error Initilizing");
+        foreach(string str in errorLog){Echo(str);}    
     }       
      
-// Runtime End //     
-     
-      foreach(string str in errorLog){Echo(str);}   
+// Runtime End //      
    
     string updatePrefs =       
         "* Preferences: * \r\n"     
@@ -80,7 +83,7 @@ public void Main(string argument){
         + "AIAttempts|" + attempts + "\r\n" 
         + "AICoordinateSpacing|" + coordSpacing + "\r\n" 
         + "AICalcFitness|"  
-        + String.Format("{0}-{1}-{2}-{3}-{4}", genCoordFitness[0],genCoordFitness[1],genCoordFitness[2],genCoordFitness[3],genCoordFitness[4]);     
+        + String.Format("{0}-{1}-{2}-{3}-{4}-{5}", genCoordFitness[0],genCoordFitness[1],genCoordFitness[2],genCoordFitness[3],genCoordFitness[4],genCoordFitness[5]);     
    
     Me.CustomData = updatePrefs;    
 }       
@@ -162,7 +165,6 @@ public void Main(string argument){
                 foreach(GPSlocation g in knownCoords){ 
                     if(gps.ToString() == g.ToString()){compare = true;}                      
                 } 
-                 
                 if(!compare){knownCoords.Add(gps);writeToLine(lcdMain,("Added: " + str),true);} 
             }  
   
@@ -202,7 +204,12 @@ public void Main(string argument){
         }catch(Exception e){   
             runCount = 0;   
             exceptionHandler(e);    
-        }     
+        }   
+        // AIAttempts
+        // AISpacing
+        // AI
+
+
     }     
    
     public string exceptionHandler(Exception e){    
@@ -232,8 +239,9 @@ public void Main(string argument){
     }     
    
     public string drawLCDStatus(IMyTextPanel lcd){   
-   
-        return "Status";   
+        string output = 
+            String.Format("Runtime Count: {0}\r\nError Count {1}\r\n",runCount,errorLog.Count);
+        return output;   
     }   
    
     public string drawLCDRemote(IMyTextPanel lcd){   
@@ -369,12 +377,12 @@ public void Main(string argument){
             return new Vector3D(x,y,z);        
         }       
        
-         public bool checkNear(Vector3D gps2){  
+         public bool checkNear(Vector3D gps2, double spacing){  
             double deltaX = (gps.X > gps2.X) ? gps.X - gps2.X : gps2.X - gps.X;  
             double deltaY = (gps.Y > gps2.Y) ? gps.Y - gps2.Y : gps2.Y - gps.Y;  
             double deltaZ = (gps.Z > gps2.Z) ? gps.Z - gps2.Z : gps2.Z - gps.Z;  
  
-            if(deltaX < 200 || deltaY < 200 || deltaZ < 200){return false;}else{return true;} 
+            if(deltaX < spacing || deltaY < spacing || deltaZ < spaceing){return false;}else{return true;} 
         } 
  
         public void fitnessEval(){     

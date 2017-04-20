@@ -1,405 +1,437 @@
-// Coniguration:       
-int DefaultRadius = 5000;         
-string OriginType;       
-string OriginComm;       
-string DroneStatus;     
-     
-GPSlocation Origin;     
-GPSlocation Current;   
-
-bool DEBUG = true;
-
-// Variables        
-    // Utility       
-    int runCount;   
-    string terminalData;        
-    string newTerminalData;  
- 
-    // Block References 
-    IMyRemoteControl remote;        
-    IMyTextPanel lcdMain;   
-    List<IMyGyro> blackbox = new List<IMyGyro>();   
-    IMyLaserAntenna comm;   
-    List<IMyTextPanel> lcds = new List<IMyTextPanel>();           
-    List<string> errorLog = new List<string>();   
-       
-    // Navigation        
-    List<GPSlocation> knownCoords = new List<GPSlocation>(); 
-    List<GPSlocation> poi = new List<GPSlocation>();  // Script will keep coordinates  
-  
-    // AI Variables 
-    int coordSpacing = 200;      
-    int[] genCoordFitness = new int[6]; // [1:Random Coordinate - 2:Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product - 6: Points of Interest]     
-    int attempts = 0;   
-       
-public void Main(string argument){        
-          
-    getPreferences();       
- 
- 
-    //Storage = "<Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>\r\n<Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>\r\n<Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>"; 
-     
-//  Main Code //     
+// Coniguration:        
+int DefaultRadius = 5000;          
+string OriginType;        
+string OriginComm;        
+string DroneStatus;      
       
-    if(setVariables()){       
-        writeToLine(lcdMain,("Runtime Count: " + runCount),true); 
-        writeToLine(lcdMain,"",true);  
-        writeToLine(lcdMain,("Error Count: " + errorLog.Count),true);
-        if(errorLog.Count > 0){writeToLine(lcdMain,("\tError in script, see lcdMain Custom Data for Details"),true);}
-        Current = new GPSlocation("Origin",remote.GetPosition()); 
-        // Get Status and Respond  
-      switch(DroneStatus){   
-            case "Idle":   
-                // Check for Comm Connection -> Send Data if available   
-                    // Set Status -> Tranasmitting Data  
-                // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate  
-                    // Set Status -> Exploring  
-                writeToLine(lcdMain,"Idle",true);  
-                break;  
-            case "Exploring":  
-                // Autopilot enabled and going to destination  
-                  
-                break;  
-            default:  
-                DroneStatus = "Idle";  
-                break; 
-        }    
+GPSlocation Origin;      
+GPSlocation Current;    
         
-        if(DEBUG){lcdMain.CustomData = "";}
-        for(int i = 0; i < errorLog.Count; i++){lcdMain.CustomData += String.Format("{0}) {1}", i, errorLog[i]);}         
-    }else{     
-        Echo("Error Initilizing");
-        foreach(string str in errorLog){Echo(str);}    
-    }       
-     
-// Runtime End //      
-   
-    string updatePrefs =       
-        "* Preferences: * \r\n"     
-        + "Operating Radius|" + DefaultRadius + "\r\n"      
-        + "OriginGPS|" + Origin.ToString() + "\r\n"     
-        + "DroneStatus|" + DroneStatus + "\r\n"   
-        + "RuntimeCount|" + runCount + "\r\n"
-        + "AIAttempts|" + attempts + "\r\n" 
-        + "AICoordinateSpacing|" + coordSpacing + "\r\n" 
-        + "AICalcFitness|"  
-        + String.Format("{0}-{1}-{2}-{3}-{4}-{5}", genCoordFitness[0],genCoordFitness[1],genCoordFitness[2],genCoordFitness[3],genCoordFitness[4],genCoordFitness[5]);     
-   
-    Me.CustomData = updatePrefs;    
-}       
-   
-// Utility Methods   
-    public bool setVariables(){   
-    // Initialize Variables        
-        List<IMyTerminalBlock> l0 = new List<IMyTerminalBlock>(); // Remote Control   
-        List<IMyTerminalBlock> l1 = new List<IMyTerminalBlock>(); // LCD Pannels       
-        List<IMyTerminalBlock> l2 = new List<IMyTerminalBlock>(); // Laser Antenna   
-        List<IMyTerminalBlock> l3 = new List<IMyTerminalBlock>(); // Gyroscopes   
-        List<IMyTerminalBlock> l4 = new List<IMyTerminalBlock>(); // Sensors 
-        terminalData = Storage;          
-           
-    // Set Variables        
-        // Remote Control:        
-            GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(l0);   
-            remote = (IMyRemoteControl)l0[0];  
-            if(remote == null){errorLog.Add("Error: Missing Remote Control - \r\n Please Add a Remote Control To Ship\r\n");return false;}    
-        // Main LCD:        
-            lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDMain");       
-            if(lcdMain == null){errorLog.Add("Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDMain to Ship\r\n");return false;}       
-            writeToLCD(lcdMain, "", false);     
-        // Other LCDs:   
-            /*   
-                Status - [lcdStatus] General information about drone   
-                Remote Status - [lcdRemote] - Status of the Remote Control (Autopilot On/Off - Waypoints Set)   
-                Fuel Status - [lcdFuel] - Status of fuel systems   
-                ?Damage Status - [lcdDamage] - Reports on any ship damage   
-                Data Package Info - [lcdData] - Shows the data currently packaged and awaiting to be sent back to base through a laser antenna and    
-                    inter-grid connections   
-   
-                Input - [lcdInput] - Will display fields in customData and Public Text.  The user can update the custom data   
-            */   
-            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(l1);   
-            foreach(IMyTextPanel txt in l1){    
-                string output = "";   
-                writeToLCD(txt,"",false);   
-                txt.SetValue("FontSize", (float)0.5);   
-                string[] customData = txt.CustomData.Split('\n');   
-   
-                if(txt.CustomName.Contains("[lcdStatus]")){output += drawLCDStatus(txt);}   
-                if(txt.CustomName.Contains("[lcdRemote]")){output += drawLCDRemote(txt);}   
-                if(txt.CustomName.Contains("[lcdFuel]")){output += drawLCDFuel(txt);}   
-                if(txt.CustomName.Contains("[lcdDamage]")){output += drawLCDDamage(txt);}   
-                if(txt.CustomName.Contains("[lcdData]")){output += drawLCDData(txt);}   
-   
-                try{   
-                    writeToLCD(txt,output,true);   
-                }catch(Exception e){   
-                    writeToLine(lcdMain,exceptionHandler(e),true);   
-                }   
-            }   
-   
-        // BlackBox Storage in Gyroscopes   
-            GridTerminalSystem.GetBlocksOfType<IMyGyro>(l3);    
-   
-            if(l3.Count != 0){   
-                for(int i = 0; i < l3.Count;i++){   
-                    string storageData = l3[i].CustomData;   
-                    string[] sData = storageData.Split('\n')[0].Split(':');   
-   
-                    if(!blackbox.Contains(l3[i])){   
-                        blackbox.Add((IMyGyro)l3[i]);  
-                        l3[i].CustomData = "";  
-                    }   
-                }    
-            }else{return false;}  
-   
-        // Laser Antennas   
-            //GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(l2);  
-            //comm = (IMyLaserAntenna)l2[0];   
-          
-        // Get Known Data  
-            string[] rawData = terminalData.Split('\n');  
-            foreach(string str in rawData){  
-                GPSlocation gps = new GPSlocation(str); bool compare = false; 
-                 
-                foreach(GPSlocation g in knownCoords){ 
-                    if(gps.ToString() == g.ToString()){compare = true;}                      
-                } 
-                if(!compare){knownCoords.Add(gps);writeToLine(lcdMain,("Added: " + str),true);} 
-            }  
-  
-        return true;   
-    }   
-   
-    public void getPreferences(){       
-        string pref = Me.CustomData;      
-        string[] prefs = pref.Split('\n');      
-       
-        // Default Radius      
-        DefaultRadius = Int32.Parse(prefs[1].Split('|')[1]);      
-        // Origin GPS                                                                                           //Origin = new GPSlocation("Origin",remote.GetPosition());    
-        string oGPS = prefs[2].Split('|')[1];    
-        if(prefs[2].Length <= 12){      
-            Origin = new GPSlocation("Origin",remote.GetPosition());    
-            Origin.customInfo.Add("OriginType","Stationary");      
-            Origin.customInfo.Add("OriginComm", "none");    
-            OriginComm = "none";    
-            OriginType = "Stationary";     
-        }else{      
-            Origin = new GPSlocation(oGPS);    
-            if(Origin.eventLog.Length > 0){writeToLine(lcdMain,Origin.eventLog,true);}    
-            string comm = "";    
-            string type = "";    
-            if(Origin.customInfo.TryGetValue("OriginComm", out comm)){OriginComm = comm;}else{OriginComm = "none";}    
-            if(Origin.customInfo.TryGetValue("OriginType", out type)){OriginType = type;}else{OriginType = "Stationary";}      
-        }    
-        //Drone Status     
-        DroneStatus = prefs[3].Split('|')[1].Trim();      
-        if(DroneStatus == ""){DroneStatus = "Idle";}  
-        // Runtime Count    
-        try{   
-            int j;    
-            runCount = Int32.TryParse(prefs[4].Split('|')[1], out j) ? j : 0;     
-            runCount++;   
-        }catch(Exception e){   
-            runCount = 0;   
-            exceptionHandler(e);    
-        }   
-        // AIAttempts
-        // AISpacing
-        // AI
+// Variables         
+    // Utility        
+    int runCount;    
+    string terminalData;         
+    string newTerminalData;  
 
-
-    }     
-   
-    public string exceptionHandler(Exception e){    
-        string exeptTXT = e.ToString().Split(':')[0].Split('.')[1];    
-       
-        writeToLine(lcdMain,("Error: " + exeptTXT),true);     
-           
-        switch(exeptTXT){    
-            case "IndexOutOfRangeException":    
-                errorLog.Add("Error: " + e.Message + "\nStack Trace ------->\n\t" + e.StackTrace + "\n");   
-                return "0";    
-            default:    
-                return"0";    
-        }   
-    }   
-   
-// LCD Methods     
-    public void writeToLCD(IMyTextPanel lcd, string output, bool append){        
-        // Applys text to LCD Screens        
-        ((IMyTextPanel)lcd).WritePublicText(output,append);        
-        ((IMyTextPanel)lcd).ShowPublicTextOnScreen();        
-    }       
-       
-    public void writeToLine(IMyTextPanel lcd, string output, bool append){     
-        string txtOut = output + "\r\n";     
-        writeToLCD(lcd,txtOut,append);     
-    }     
-   
-    public string drawLCDStatus(IMyTextPanel lcd){   
-        string output = 
-            String.Format("Runtime Count: {0}\r\nError Count {1}\r\n",runCount,errorLog.Count);
-        return output;   
-    }   
-   
-    public string drawLCDRemote(IMyTextPanel lcd){   
-   
-        return "Remote";   
-    }   
-   
-    public string drawLCDFuel(IMyTextPanel lcd){   
-   
-        return "Fuel";   
-    }   
-   
-    public string drawLCDDamage(IMyTextPanel lcd){   
-   
-        return "Damage";   
-    }   
-   
-    public string drawLCDData(IMyTextPanel lcd){   
-        string output = "";  
+    public Dictionary<double,int> lcdSettings = new Dictionary<double,int>(){ 
+        {0.5,52},{0.75,34},{1,25},{2,12} 
+    };       
   
-        foreach(GPSlocation gps in knownCoords){  
-            output = gps.ToString() + "\r\n";  
-        }  
+    // Block References  
+    IMyRemoteControl remote;         
+    IMyTextPanel lcdMain;    
+    List<IMyGyro> blackbox = new List<IMyGyro>();    
+    IMyLaserAntenna comm;    
+    List<IMyTextPanel> lcds = new List<IMyTextPanel>();            
+    List<string> errorLog = new List<string>();    
+        
+    // Navigation         
+    List<GPSlocation> knownCoords = new List<GPSlocation>();  
+    List<GPSlocation> poi = new List<GPSlocation>();  // Script will keep coordinates   
+   
+    // AI Variables  
+    int coordSpacing = 200;       
+    int[] genCoordFitness = new int[6]; // [1: Random Coordinate - 2: Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product]      
+    int attempts = 0;    
+        
+public void Main(string argument){         
+           
+    getPreferences();        
   
-        return output;   
-    }   
-   
-    public string drawErrorLog(IMyTextPanel lcd){   
-        return "Error Log";   
-    }   
-   
-    public string drawLCDInput(IMyTextPanel lcd){return "LCD Input->Output";}   
-   
-    public string getLCDInput(IMyTextPanel lcd){return "LCD Input";}   
-   
-    public void drawLCDMain(IMyTextPanel lcd){     
-        writeToLCD(lcdMain,"",false);     
-        writeToLCD(lcdMain,"",true);     
-    }     
-   
-// Navigation Methods   
-    public MyWaypointInfo genNewCoord(){       
-        Random rnd = new Random();       
-           
-        double x = genRandomNumber();     
-        x = x + Origin.gps.X;       
-        double y = genRandomNumber();     
-        y = y + Origin.gps.Y;       
-        double z = genRandomNumber();     
-        z = z = Origin.gps.Z;       
-               
-        Vector3D coord = new Vector3D(x,y,z);       
-           
-        return new MyWaypointInfo("testCoord",coord);       
-    }       
-           
-    public double genRandomNumber(){       
-        Random rnd = new Random();       
-               
-        int direction = rnd.Next(0,1);       
-        int number = rnd.Next(1,DefaultRadius);       
-           
-        if(direction == 1){       
-            return Convert.ToDouble(number);       
-        }else{       
-            return Convert.ToDouble(number * -1);       
-        }       
-    }   
-   
-// Nested Classes   
-    public class GPSlocation {      
-        public string name;      
-        public Vector3D gps;      
-        public int fitness = 0;     
-        public Dictionary<string,string> customInfo = new Dictionary<string,string>();     
+  
+    //Storage = "<Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>\r\n<Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>\r\n<Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>";  
+      
+//  Main Code //      
        
-        public string eventLog = "";    
-       
-        public GPSlocation (string newName, Vector3D newGPS){      
-            name = newName;      
-            gps = newGPS;     
+    if(setVariables()){        
+        writeToLine(lcdMain,("Runtime Count: " + runCount),true);   
+        writeToLine(lcdMain,"",true);    
+        writeToLine(lcdMain,("Error Count: " + errorLog.Count),true);  
+        if(errorLog.Count > 0){writeToLine(lcdMain,("\tError in script, see lcdMain Custom Data for Details"),true);}  
+        Current = new GPSlocation("Origin",remote.GetPosition());    
+  
+  
+        // Get Status and Respond   
+      switch(DroneStatus){    
+            case "Idle":    
+                // Check for Comm Connection -> Send Data if available    
+                    // Set Status -> Tranasmitting Data   
+                // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate   
+                    // Set Status -> Exploring   
+                writeToLine(lcdMain,"Idle",true);   
+                break;   
+            case "Exploring":   
+                // Autopilot enabled and going to destination   
+                   
+                break;   
+            default:   
+                DroneStatus = "Idle";   
+                break;  
         }     
-       
-        public GPSlocation (string storedGPS){     
-       
-            // "<Origin^{X:0 Y:0 Z:0}^0^OriginType:Stationary$OriginComm:none>"    
-       
-            char[] charsToTrim = {'<','>',' '};    
-            string storeGPS = storedGPS.Trim();    
-            storeGPS = storeGPS.Trim(charsToTrim);     
-            string[] attr = storeGPS.Split('^');     
-               
-            // Name     
-            name = attr[0];     
-               
-            // GPS     
-            gps = recoverGPS(attr[1]);     
-               
-            // Fitness     
-            int fit; bool fitCheck = Int32.TryParse(attr[2],out fit);     
-            if(fitCheck){fitness = fit;}else{fitness = 0;}     
-               
-            // Custom Info    
-            if(attr.Length == 4){    
-            string[] customAttr = attr[3].Split('$');    
-            foreach(string str in customAttr){    
-                    str.Trim(' ');     
-                    if(str.Length > 3 || str != ""){    
-                        //string strTest = str.Trim(new Char[]'>');     
-                        string[] temp = str.Split(':');     
-                        try{      
-                            customInfo.Add(temp[0],temp[1]);      
-                        }catch(Exception e){      
-                            eventLog += String.Format("Error Adding: {3}\r\n \tKey: {0}\r\n \tValue: {1}\r\n \r\n Stack Trace:\r\n{2}\r\n",temp[0],"value",e.ToString(),str);    
-                        }     
-                    }    
+   
+              
+    }else{      
+        Echo("Error Initilizing");      
+    }        
+      
+// Runtime End //      
+      
+      foreach(string str in errorLog){Echo(str);}    
+    
+    string updatePrefs =        
+        "* Preferences: * \r\n"      
+        + "Operating Radius|" + DefaultRadius + "\r\n"       
+        + "OriginGPS|" + Origin.ToString() + "\r\n"      
+        + "DroneStatus|" + DroneStatus + "\r\n"    
+        + "RuntimeCount|" + runCount + "\r\n" 
+        + "AIAttempts|" + attempts + "\r\n"  
+        + "AICoordinateSpacing|" + coordSpacing + "\r\n"  
+        + "AICalcFitness|"   
+        + String.Format("{0}-{1}-{2}-{3}-{4}-{5}", genCoordFitness[0],genCoordFitness[1],genCoordFitness[2],genCoordFitness[3],genCoordFitness[4],genCoordFitness[5]);      
+    
+    Me.CustomData = updatePrefs;     
+}        
+    
+// Utility Methods    
+    public bool setVariables(){    
+    // Initialize Variables         
+        List<IMyTerminalBlock> l0 = new List<IMyTerminalBlock>(); // Remote Control    
+        List<IMyTerminalBlock> l1 = new List<IMyTerminalBlock>(); // LCD Pannels        
+        List<IMyTerminalBlock> l2 = new List<IMyTerminalBlock>(); // Laser Antenna    
+        List<IMyTerminalBlock> l3 = new List<IMyTerminalBlock>(); // Gyroscopes    
+        List<IMyTerminalBlock> l4 = new List<IMyTerminalBlock>(); // Sensors  
+        terminalData = Storage;           
+            
+    // Set Variables         
+        // Remote Control:         
+            GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(l0);    
+            remote = (IMyRemoteControl)l0[0];   
+            if(remote == null){errorLog.Add("Error: Missing Remote Control - \r\n Please Add a Remote Control To Ship\r\n");return false;}     
+        // Main LCD:         
+            lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDMain");        
+            if(lcdMain == null){errorLog.Add("Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDMain to Ship\r\n");return false;}        
+            writeToLCD(lcdMain, "", false);      
+        // Other LCDs:    
+            /*    
+                Status - [lcdStatus] General information about drone    
+                Remote Status - [lcdRemote] - Status of the Remote Control (Autopilot On/Off - Waypoints Set)    
+                Fuel Status - [lcdFuel] - Status of fuel systems    
+                ?Damage Status - [lcdDamage] - Reports on any ship damage    
+                Data Package Info - [lcdData] - Shows the data currently packaged and awaiting to be sent back to base through a laser antenna and     
+                    inter-grid connections    
+    
+                Input - [lcdInput] - Will display fields in customData and Public Text.  The user can update the custom data    
+            */    
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(l1);    
+            foreach(IMyTextPanel txt in l1){     
+                string output = "";    
+                writeToLCD(txt,"",false);    
+                //txt.SetValue("FontSize", (float)0.5);    
+                string[] customData = txt.CustomData.Split('\n');    
+    
+                if(txt.CustomName.Contains("[lcdStatus]")){output += drawLCDStatus(txt);}    
+                if(txt.CustomName.Contains("[lcdRemote]")){output += drawLCDRemote(txt);}    
+                if(txt.CustomName.Contains("[lcdFuel]")){output += drawLCDFuel(txt);}    
+                if(txt.CustomName.Contains("[lcdDamage]")){output += drawLCDDamage(txt);}    
+                if(txt.CustomName.Contains("[lcdData]")){output += drawLCDData(txt);}    
+    
+                try{    
+                    writeToLCD(txt,output,true);    
+                }catch(Exception e){    
+                    writeToLine(lcdMain,exceptionHandler(e),true);    
                 }    
             }    
-        }     
-           
-        public MyWaypointInfo convertToWaypoint(){     
-            return new MyWaypointInfo(name,gps);     
-        }     
-       
-        public Vector3D recoverGPS(string waypoint){           
-            waypoint = waypoint.Trim(new Char[] {'{','}'});     
-            string[] coord = waypoint.Split(' ');       
-               
-            double x = double.Parse(coord[0].Split(':')[1]);       
-            double y = double.Parse(coord[1].Split(':')[1]);       
-            double z = double.Parse(coord[2].Split(':')[1]);       
-               
-            return new Vector3D(x,y,z);        
-        }       
-       
-         public bool checkNear(Vector3D gps2, double spacing){  
-            double deltaX = (gps.X > gps2.X) ? gps.X - gps2.X : gps2.X - gps.X;  
-            double deltaY = (gps.Y > gps2.Y) ? gps.Y - gps2.Y : gps2.Y - gps.Y;  
-            double deltaZ = (gps.Z > gps2.Z) ? gps.Z - gps2.Z : gps2.Z - gps.Z;  
- 
-            if(deltaX < spacing || deltaY < spacing || deltaZ < spaceing){return false;}else{return true;} 
-        } 
- 
-        public void fitnessEval(){     
-       
-        }     
-       
-        public override string ToString(){     
-            string custom = "";     
-            if(customInfo.Count != 0){        
-                foreach (KeyValuePair<string,string> item in customInfo)     
-                {     
-                    custom += String.Format("{0}:{1}$",item.Key,item.Value);     
+    
+        // BlackBox Storage in Gyroscopes    
+            GridTerminalSystem.GetBlocksOfType<IMyGyro>(l3);     
+    
+            if(l3.Count != 0){    
+                for(int i = 0; i < l3.Count;i++){    
+                    string storageData = l3[i].CustomData;    
+                    string[] sData = storageData.Split('\n')[0].Split(':');    
+    
+                    if(!blackbox.Contains(l3[i])){    
+                        blackbox.Add((IMyGyro)l3[i]);   
+                        l3[i].CustomData = "";   
+                    }    
                 }     
-                custom = custom.TrimEnd('$');    
-            }else{custom = "0";}    
-       
-            string rtnString = String.Format("<{0}^{1}^{2}^{3}>",name,gps.ToString(),fitness,custom);     
-            return rtnString;     
+            }else{return false;}   
+    
+        // Laser Antennas    
+            //GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(l2);   
+            //comm = (IMyLaserAntenna)l2[0];    
+           
+        // Get Known Data   
+            string[] rawData = terminalData.Split('\n');   
+            foreach(string str in rawData){   
+                GPSlocation gps = new GPSlocation(str); bool compare = false;  
+                  
+                foreach(GPSlocation g in knownCoords){  
+                    if(gps.ToString() == g.ToString()){compare = true;}                       
+                }  
+                  
+                if(!compare){knownCoords.Add(gps);writeToLine(lcdMain,("Added: " + str),true);}  
+            }   
+   
+        return true;    
+    }    
+    
+    public void getPreferences(){        
+        string pref = Me.CustomData;       
+        int j; 
+        string[] prefs = pref.Split('\n');       
+        
+        // Default Radius       
+        DefaultRadius = Int32.Parse(prefs[1].Split('|')[1]);       
+        // Origin GPS                                                                                           //Origin = new GPSlocation("Origin",remote.GetPosition());     
+        string oGPS = prefs[2].Split('|')[1];     
+        if(prefs[2].Length <= 12){       
+            Origin = new GPSlocation("Origin",remote.GetPosition());     
+            Origin.customInfo.Add("OriginType","Stationary");       
+            Origin.customInfo.Add("OriginComm", "none");     
+            OriginComm = "none";     
+            OriginType = "Stationary";      
+        }else{       
+            Origin = new GPSlocation(oGPS);     
+            if(Origin.eventLog.Length > 0){writeToLine(lcdMain,Origin.eventLog,true);}     
+            string comm = "";     
+            string type = "";     
+            if(Origin.customInfo.TryGetValue("OriginComm", out comm)){OriginComm = comm;}else{OriginComm = "none";}     
+            if(Origin.customInfo.TryGetValue("OriginType", out type)){OriginType = type;}else{OriginType = "Stationary";}       
+        }     
+        //Drone Status      
+            DroneStatus = prefs[3].Split('|')[1].Trim();       
+            if(DroneStatus == ""){DroneStatus = "Idle";}   
+        // Runtime Count     
+            try{    
+                runCount = Int32.TryParse(prefs[4].Split('|')[1], out j) ? j : 0;      
+                runCount++;    
+            }catch(Exception e){    
+                runCount = 0;    
+                exceptionHandler(e);     
+            }  
+         // AIAttempts  
+            try{  
+                attempts = Int32.TryParse(prefs[5].Split('|')[1], out j) ? j : 0;  
+            }catch(Exception e){  
+                attempts = 0;  
+                exceptionHandler(e);  
+            }  
+        // AISpacing  
+            try{  
+                coordSpacing = Int32.TryParse(prefs[6].Split('|')[1], out j) ? j : 0;  
+            }catch(Exception e){  
+                coordSpacing = 0;  
+                exceptionHandler(e);  
+            }  
+        // AI Fitness 
+            try{ 
+                string[] fitnessArray = prefs[7].Split('|')[1].Split('-'); 
+                for(int i = 0; i < fitnessArray.Length; i++){ 
+                    genCoordFitness[i] = Int32.TryParse(fitnessArray[i], out j) ? j : 0; 
+                } 
+            }catch(Exception e){ 
+                exceptionHandler(e); 
+                genCoordFitness = new int[6]; 
+            } 
+    }      
+    
+    public string exceptionHandler(Exception e){     
+        string exeptTXT = e.ToString().Split(':')[0].Split('.')[1];     
+        
+        writeToLine(lcdMain,("Error: " + exeptTXT),true);      
+        errorLog.Add("Error: " + e.Message + "\nStack Trace ------->\n\t" + e.StackTrace + "\n");    
+        return "0";         
+    }    
+    
+// LCD Methods      
+    public void writeToLCD(IMyTextPanel lcd, string output, bool append){         
+        // Applys text to LCD Screens         
+        ((IMyTextPanel)lcd).WritePublicText(output,append);         
+        ((IMyTextPanel)lcd).ShowPublicTextOnScreen();         
+    }        
+        
+    public void writeToLine(IMyTextPanel lcd, string output, bool append){      
+        string txtOut = output + "\r\n";      
+        writeToLCD(lcd,txtOut,append);      
+    }      
+    
+    public string drawLCDStatus(IMyTextPanel lcd){    
+        string[] header =  {"Runtime Count", "Error Count", "AI Status"}; 
+        string[] newOutput = { runCount.ToString(), errorLog.Count.ToString(), DroneStatus}; 
+        string[] oldOutput = lcd.CustomData.Split('\n'); 
+        
+        string spacer = " ";
+        float width = lcd.GetValue<float>("FontSize"); int j;
+        int fontSize = lcdSettings.TryGetValue((double)width, out j) ? j : 25;
+        float headerCount;
+        foreach(string str in header){headerCount += (float)str.Length;}
+
+        //if(headerCount < lcdSettings.Get) 
+
+        string output;
+
+        //for(string str in header)
+
+        return "";
+    }    
+    
+    public string drawLCDRemote(IMyTextPanel lcd){    
+    
+        return "Remote";    
+    }    
+    
+    public string drawLCDFuel(IMyTextPanel lcd){    
+    
+        return "Fuel";    
+    }    
+    
+    public string drawLCDDamage(IMyTextPanel lcd){    
+    
+        return "Damage";    
+    }    
+    
+    public string drawLCDData(IMyTextPanel lcd){    
+        string output = "";   
+   
+        foreach(GPSlocation gps in knownCoords){   
+            output = gps.ToString() + "\r\n";   
+        }   
+   
+        return output;    
+    }    
+    
+    public string drawErrorLog(IMyTextPanel lcd){    
+        return "Error Log";    
+    }    
+    
+    public string drawLCDInput(IMyTextPanel lcd){return "LCD Input->Output";}    
+    
+    public string getLCDInput(IMyTextPanel lcd){return "LCD Input";}    
+    
+    public void drawLCDMain(IMyTextPanel lcd){      
+        writeToLCD(lcdMain,"",false);      
+        writeToLCD(lcdMain,"",true);      
+    }      
+    
+// Navigation Methods    
+    public MyWaypointInfo genNewCoord(){        
+        Random rnd = new Random();        
+            
+        double x = genRandomNumber();      
+        x = x + Origin.gps.X;        
+        double y = genRandomNumber();      
+        y = y + Origin.gps.Y;        
+        double z = genRandomNumber();      
+        z = z = Origin.gps.Z;        
+                
+        Vector3D coord = new Vector3D(x,y,z);        
+            
+        return new MyWaypointInfo("testCoord",coord);        
+    }        
+            
+    public double genRandomNumber(){        
+        Random rnd = new Random();        
+                
+        int direction = rnd.Next(0,1);        
+        int number = rnd.Next(1,DefaultRadius);        
+            
+        if(direction == 1){        
+            return Convert.ToDouble(number);        
+        }else{        
+            return Convert.ToDouble(number * -1);        
+        }        
+    }    
+    
+// Nested Classes    
+    public class GPSlocation {       
+        public string name;       
+        public Vector3D gps;       
+        public int fitness = 0;      
+        public Dictionary<string,string> customInfo = new Dictionary<string,string>();      
+        
+        public string eventLog = "";     
+        
+        public GPSlocation (string newName, Vector3D newGPS){       
+            name = newName;       
+            gps = newGPS;      
+        }      
+        
+        public GPSlocation (string storedGPS){      
+        
+            // "<Origin^{X:0 Y:0 Z:0}^0^OriginType:Stationary$OriginComm:none>"     
+        
+            char[] charsToTrim = {'<','>',' '};     
+            string storeGPS = storedGPS.Trim();     
+            storeGPS = storeGPS.Trim(charsToTrim);      
+            string[] attr = storeGPS.Split('^');      
+                
+            // Name      
+            name = attr[0];      
+                
+            // GPS      
+            gps = recoverGPS(attr[1]);      
+                
+            // Fitness      
+            int fit; bool fitCheck = Int32.TryParse(attr[2],out fit);      
+            if(fitCheck){fitness = fit;}else{fitness = 0;}      
+                
+            // Custom Info     
+            if(attr.Length == 4){     
+            string[] customAttr = attr[3].Split('$');     
+            foreach(string str in customAttr){     
+                    str.Trim(' ');      
+                    if(str.Length > 3 || str != ""){     
+                        //string strTest = str.Trim(new Char[]'>');      
+                        string[] temp = str.Split(':');      
+                        try{       
+                            customInfo.Add(temp[0],temp[1]);       
+                        }catch(Exception e){       
+                            eventLog += String.Format("Error Adding: {3}\r\n \tKey: {0}\r\n \tValue: {1}\r\n \r\n Stack Trace:\r\n{2}\r\n",temp[0],"value",e.ToString(),str);     
+                        }      
+                    }     
+                }     
+            }     
+        }      
+            
+        public MyWaypointInfo convertToWaypoint(){      
+            return new MyWaypointInfo(name,gps);      
+        }      
+        
+        public Vector3D recoverGPS(string waypoint){            
+            waypoint = waypoint.Trim(new Char[] {'{','}'});      
+            string[] coord = waypoint.Split(' ');        
+                
+            double x = double.Parse(coord[0].Split(':')[1]);        
+            double y = double.Parse(coord[1].Split(':')[1]);        
+            double z = double.Parse(coord[2].Split(':')[1]);        
+                
+            return new Vector3D(x,y,z);         
+        }        
+        
+         public bool checkNear(Vector3D gps2){   
+            double deltaX = (gps.X > gps2.X) ? gps.X - gps2.X : gps2.X - gps.X;   
+            double deltaY = (gps.Y > gps2.Y) ? gps.Y - gps2.Y : gps2.Y - gps.Y;   
+            double deltaZ = (gps.Z > gps2.Z) ? gps.Z - gps2.Z : gps2.Z - gps.Z;   
+  
+            if(deltaX < 200 || deltaY < 200 || deltaZ < 200){return false;}else{return true;}  
         }  
+  
+        public void fitnessEval(){      
+        
+        }      
+        
+        public override string ToString(){      
+            string custom = "";      
+            if(customInfo.Count != 0){         
+                foreach (KeyValuePair<string,string> item in customInfo)      
+                {      
+                    custom += String.Format("{0}:{1}$",item.Key,item.Value);      
+                }      
+                custom = custom.TrimEnd('$');     
+            }else{custom = "0";}     
+        
+            string rtnString = String.Format("<{0}^{1}^{2}^{3}>",name,gps.ToString(),fitness,custom);      
+            return rtnString;      
+        }   
     }

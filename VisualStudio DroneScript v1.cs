@@ -19,15 +19,15 @@ namespace IngameScript
     public class Program : MyGridProgram
     {
         #endregion
-
+    #region Variables
         // Coniguration:                
         int DefaultRadius = 5000;
         string OriginType;
         string OriginComm;
         string DroneStatus;
 
-        GPSlocation Origin;
-        GPSlocation Current;
+        GPSlocation Origin = null;
+        GPSlocation Current = null;
 
         // Variables                 
         // Utility                
@@ -51,6 +51,7 @@ namespace IngameScript
         List<IMyTextPanel> lcds = new List<IMyTextPanel>();
         public Dictionary<string, IMySensorBlock> sensors = new Dictionary<string, IMySensorBlock>(){ { "asteriod", null }, {"ship", null}, { "player", null } };
         List<string> errorLog = new List<string>();
+        List<string> eventLog = new List<string>();
 
         // Navigation                 
         List<GPSlocation> knownCoords = new List<GPSlocation>();
@@ -60,6 +61,7 @@ namespace IngameScript
         int coordSpacing = 200;
         int[] genCoordFitness = new int[6]; // [1: Random Coordinate - 2: Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product - 6: Points of Interest]              
         int attempts = 0;
+    #endregion
 
         public void Main(string argument)
         {
@@ -81,7 +83,7 @@ namespace IngameScript
                         // Check for Comm Connection -> Send Data if available            
                         // Set Status -> Tranasmitting Data           
                         // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate           
-                        newCoordinate(AI);
+                        Current = newCoordinate(AI);
 
                         break;
                     case "Exploring":
@@ -103,6 +105,7 @@ namespace IngameScript
             else
             {
                 Echo("Error Initilizing");
+                if(DEBUG) {  }
             }
 
             // Runtime End //              
@@ -123,10 +126,12 @@ namespace IngameScript
 
                 Me.CustomData = updatePrefs;
             }
-            catch (Exception e) { writeToLine(lcdMain, e.ToString(), true); Echo("107 " + e.ToString()); }
+            catch (Exception e) { 
+                if(DEBUG) { exceptionHandler(e,128); }
+            }
         }
 
-        // Utility Methods 
+    #region Utility Methods 
         public bool getRemote()
         {
             List<IMyTerminalBlock> l0 = new List<IMyTerminalBlock>(); // Remote Control
@@ -159,7 +164,7 @@ namespace IngameScript
                 lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDMain");
                 if (lcdMain == null) { errorLog.Add("Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDMain to Ship\r\n"); return false; }
                 writeToLCD(lcdMain, "", false);
-                initProgress++;
+                eventLog("Initialize lcdMain","lcdMain Available");
             }
             catch (Exception e)
             {
@@ -463,16 +468,45 @@ namespace IngameScript
             initProgress++;
         }
 
-        public string exceptionHandler(Exception e, int codeLine)
+        public bool eventLogger(string eventName, string[] eventData, Exception e = null)
+        {
+            try
+            {
+                string output = eventName + "{ \n\t";
+                foreach(string str in eventData)
+                {
+                    output += str + "\n\t";
+                }
+
+                if(e != null)
+                {
+                    output += e.Message + "\n \n\t" + e.StackTrace + "\n";
+                }
+
+                output += "}";
+            } 
+            catch (Exception e) 
+            {
+                exceptionHandler(e);
+                return false;
+            }
+
+        }
+
+        public string exceptionHandler(Exception e, int codeLine = 0)
         {
             string exeptTXT = e.ToString().Split(':')[0].Split('.')[1];
 
             writeToLine(lcdMain, ("Error: " + exeptTXT), true);
-            errorLog.Add("Error: " + e.Message + "\nStack Trace ------->\n\t" + e.StackTrace + "\n");
-            return "0";
-        }
+            errorLog.Add(codeLine + " - Error: " + e.Message + "\nStack Trace ------->\n\t" + e.StackTrace + "\n");
 
-        // LCD Methods              
+            // Dump Log
+            foreach(string str in eventLog){lcdMain.CustomData += str + "\r\n";}
+
+            return ("Error: " + exeptTXT);
+        }
+    #endregion
+    #region LCD Methods              
         public void writeToLCD(IMyTextPanel lcd, string output, bool append)
         {
             // Applys text to LCD Screens                 
@@ -639,109 +673,109 @@ namespace IngameScript
             foreach (string str in text) { textCount += (float)str.Length; }
             return (fontSize - textCount) / (text.Length - 1);
         }
-     
-        #region Navigation Methods 
-            public GPSlocation newCoordinate(AIModule a)
+    #endregion
+    #region Navigation Methods 
+        public GPSlocation newCoordinate(AIModule a)
+        {
+
+            int selector = 0;
+
+            for (int i = 0; i < 6; i++)
             {
-
-                int selector = 0;
-
-                for (int i = 0; i < 6; i++)
-                {
-                    selector = (a.aiFitness[selector] > a.aiFitness[i]) ? selector : i;
-                }
-
-                string stamp = DateTime.Now.ToString("HHmmssfff");
-                GPSlocation nGPS = null;
-                bool valid = false;
-                while (!valid)
-                {
-                    switch (selector)
-                    {
-                        case 1:
-                            nGPS = new GPSlocation(stamp, rndCoord());
-                            nGPS.customInfo.Add("AISelector", ("" + selector));
-                            break;
-                        case 2:
-                            nGPS = new GPSlocation(stamp, invCorrd());
-                            nGPS.customInfo.Add("AISelector", ("" + selector));
-                            break;
-                        case 3:
-                            nGPS = new GPSlocation(stamp, addVectors());
-                            nGPS.customInfo.Add("AISelector", ("" + selector));
-                            break;
-                        case 4:
-                            nGPS = new GPSlocation(stamp, dotVector());
-                            nGPS.customInfo.Add("AISelector", ("" + selector));
-                            break;
-                        case 5:
-                            nGPS = new GPSlocation(stamp, crossVector());
-                            nGPS.customInfo.Add("AISelector", ("" + selector));
-                            break;
-                        case 6:
-                            nGPS = new GPSlocation(stamp, poiCoord());
-                            nGPS.customInfo.Add("AISelector", ("" + selector));
-                            break;
-                    }
-
-                    foreach (GPSlocation g in knownCoords)
-                    {
-                        nGPS.checkNear(g.gps,a.coordSpacing);
-                    }
-                }
-                return null;
+                selector = (a.aiFitness[selector] > a.aiFitness[i]) ? selector : i;
             }
 
-            public double genRandomNumber()
+            string stamp = DateTime.Now.ToString("HHmmssfff");
+            GPSlocation nGPS = null;
+            bool valid = false;
+            while (!valid)
             {
-                Random rnd = new Random();
-
-                int direction = rnd.Next(0, 1);
-                int number = rnd.Next(1, DefaultRadius);
-
-                if (direction == 1)
+                switch (selector)
                 {
-                    return Convert.ToDouble(number);
+                    case 1:
+                        nGPS = new GPSlocation(stamp, rndCoord());
+                        nGPS.customInfo.Add("AISelector", ("" + selector));
+                        break;
+                    case 2:
+                        nGPS = new GPSlocation(stamp, invCorrd());
+                        nGPS.customInfo.Add("AISelector", ("" + selector));
+                        break;
+                    case 3:
+                        nGPS = new GPSlocation(stamp, addVectors());
+                        nGPS.customInfo.Add("AISelector", ("" + selector));
+                        break;
+                    case 4:
+                        nGPS = new GPSlocation(stamp, dotVector());
+                        nGPS.customInfo.Add("AISelector", ("" + selector));
+                        break;
+                    case 5:
+                        nGPS = new GPSlocation(stamp, crossVector());
+                        nGPS.customInfo.Add("AISelector", ("" + selector));
+                        break;
+                    case 6:
+                        nGPS = new GPSlocation(stamp, poiCoord());
+                        nGPS.customInfo.Add("AISelector", ("" + selector));
+                        break;
                 }
-                else
+
+                foreach (GPSlocation g in knownCoords)
                 {
-                    return Convert.ToDouble(number * -1);
+                    nGPS.checkNear(g.gps,a.coordSpacing);
                 }
             }
-            
-            public Vector3D rndCoord()
+            return null;
+        }
+
+        public double genRandomNumber()
+        {
+            Random rnd = new Random();
+
+            int direction = rnd.Next(0, 1);
+            int number = rnd.Next(1, DefaultRadius);
+
+            if (direction == 1)
             {
-                double x = genRandomNumber();
-                x = x + Origin.gps.X;
-                double y = genRandomNumber();
-                y = y + Origin.gps.Y;
-                double z = genRandomNumber();
-                z = z = Origin.gps.Z;
-                return new Vector3D(x,y,z);
+                return Convert.ToDouble(number);
             }
-
-            public Vector3D invCorrd()
+            else
             {
-                double x = (Current.gps.X - Origin.gps.X) * -1;
-                x = x + Origin.gps.X;
-                double y = (Current.gps.Y - Origin.gps.Y) * -1;
-                y = y + Origin.gps.Y;
-                double z = (Current.gps.Z - Origin.gps.Z) * -1;
-                z = z + Origin.gps.Z;
-
-                return new Vector3D(x, y, z); 
+                return Convert.ToDouble(number * -1);
             }
+        }
+        
+        public Vector3D rndCoord()
+        {
+            double x = genRandomNumber();
+            x = x + Origin.gps.X;
+            double y = genRandomNumber();
+            y = y + Origin.gps.Y;
+            double z = genRandomNumber();
+            z = z = Origin.gps.Z;
+            return new Vector3D(x,y,z);
+        }
 
-            public Vector3D addVectors() { return new Vector3D(0, 0, 0); }
+        public Vector3D invCorrd()
+        {
+            double x = (Current.gps.X - Origin.gps.X) * -1;
+            x = x + Origin.gps.X;
+            double y = (Current.gps.Y - Origin.gps.Y) * -1;
+            y = y + Origin.gps.Y;
+            double z = (Current.gps.Z - Origin.gps.Z) * -1;
+            z = z + Origin.gps.Z;
 
-            public Vector3D dotVector() { return new Vector3D(0, 0, 0); }
+            return new Vector3D(x, y, z); 
+        }
 
-            public Vector3D crossVector() { return new Vector3D(0, 0, 0); }
+        public Vector3D addVectors() { return new Vector3D(0, 0, 0); }
 
-            public Vector3D poiCoord() { return new Vector3D(0, 0, 0); }
+        public Vector3D dotVector() { return new Vector3D(0, 0, 0); }
 
-        #endregion
-        #region Nested Classes           
+        public Vector3D crossVector() { return new Vector3D(0, 0, 0); }
+
+        public Vector3D poiCoord() { return new Vector3D(0, 0, 0); }
+
+    #endregion
+    #region Nested Classes           
         public class GPSlocation
         {
             public string name;
@@ -750,7 +784,7 @@ namespace IngameScript
             public int fitnessType = 0;
             public Dictionary<string, string> customInfo = new Dictionary<string, string>();
 
-            public string eventLog = "";
+            public string GPSeventLog = "";
 
             public GPSlocation(string newName, Vector3D newGPS)
             {
@@ -795,7 +829,7 @@ namespace IngameScript
                             }
                             catch (Exception e)
                             {
-                                eventLog += String.Format("Error Adding: {3}\r\n \tKey: {0}\r\n \tValue: {1}\r\n \r\n Stack Trace:\r\n{2}\r\n", temp[0], "value", e.ToString(), str);
+                                GPSeventLog += String.Format("Error Adding: {3}\r\n \tKey: {0}\r\n \tValue: {1}\r\n \r\n Stack Trace:\r\n{2}\r\n", temp[0], "value", e.ToString(), str);
                             }
                         }
                     }
@@ -897,8 +931,8 @@ namespace IngameScript
                 }
             }
         }
-        #endregion
-        #region post-script
+    #endregion
+    #region post-script
     }
 }
 #endregion

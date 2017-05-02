@@ -1,29 +1,33 @@
-Added: <Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>
-Added: <Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>
-Added: <Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>
-709 - i: 0
-710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[0] : 15)
-709 - i: 1
-710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[1] : -1)
-709 - i: 2
-710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[2] : -2)
-709 - i: 3
-710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[3] : -3)
-709 - i: 4
-710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[4] : -5)
-712 - selector: 0
+Added: <Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>
+Added: <Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>
+Added: <Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>
+
+709 - i: 0
+710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[0] : 15)
+709 - i: 1
+710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[1] : -1)
+709 - i: 2
+710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[2] : -2)
+709 - i: 3
+710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[3] : -3)
+709 - i: 4
+710 - selector = (a.aiFitness[0] : 15) > ( a.aiFitness[4] : -5)
+712 - selector: 0
 755 - Object reference not set to an instance of an object.
-   at Program.newCoordinate(AIModule a)
-756 - selector:0
-nGPS = null
-KnownCoords[0] : <Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>
-KnownCoords[1] : <Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>
-KnownCoords[2] : <Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>
-Error: NullReferenceException
-167 - Initialize lcdMain
+   at Program.newCoordinate(AIModule a)
+756 - selector:0
+nGPS = null
+KnownCoords[0] : <Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>
+KnownCoords[1] : <Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>
+KnownCoords[2] : <Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>
+
+Error: NullReferenceException
+167 - Initialize lcdMain
 Error:{ 
 	Object reference not set to an instance of an object.
-	   at Program.newCoordinate(AIModule a)
+	   at Program.newCoordinate(AIModule a)
+
    at Program.Main(String argument)
 	codeLine: 115
-	}
+	}
+

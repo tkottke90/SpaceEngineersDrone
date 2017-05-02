@@ -72,42 +72,55 @@ namespace IngameScript
             //Storage = "<Massive unknown object^{X:42613 Y:147788 Z:-129714}^0^0>\r\n<Unknown object^{X:35399 Y:142334 Z:-134776}^0^0>\r\n<Massive Asteroid^{X:39759 Y:151628 Z:-130483}^0^0>";          
 
             //  Main Code //              
-            if (setVariables() && rem)
+            try
             {
-                if (DEBUG) { Echo("46 - setVariables = true"); writeToLine(lcdMain, "47 - setVariables = true", true); }
-
-                // Get Status and Respond           
-                switch (DroneStatus)
+                if (setVariables() && rem)
                 {
-                    case "Idle":
-                        // Check for Comm Connection -> Send Data if available            
-                        // Set Status -> Tranasmitting Data           
-                        // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate           
-                        Current = newCoordinate(AI);
+                    if (DEBUG) { Echo("46 - setVariables = true"); writeToLine(lcdMain, "47 - setVariables = true", true); }
 
-                        break;
-                    case "Exploring":
-                        // Autopilot enabled and going to destination           
+                    // Get Status and Respond           
+                    switch (DroneStatus)
+                    {
+                        case "Idle":
+                            // Check for Comm Connection -> Send Data if available            
+                            // Set Status -> Tranasmitting Data           
+                            // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate           
+                            Current = newCoordinate(AI);
 
-                        break;
-                    default:
-                        DroneStatus = "Idle";
-                        break;
+                            break;
+                        case "Exploring":
+                            // Autopilot enabled and going to destination           
+
+                            break;
+                        default:
+                            DroneStatus = "Idle";
+                            break;
+                    }
+                    string time = "Current Time:" + DateTime.Now.ToString();
+                    string[] header = { "Runtime Count", "Error Count", "AI Status" };
+                    string[] newOutput = { runCount.ToString(), errorLog.Count.ToString(), DroneStatus };
+                    writeToLine(lcdMain, time, true);
+                    writeToLine(lcdMain, evenTextSpace(header, lcdMain), true);
+                    writeToLine(lcdMain, matchTextSpace(header, newOutput, lcdMain), true);
+
                 }
-                string time = "Current Time:" + DateTime.Now.ToString();
-                string[] header = { "Runtime Count", "Error Count", "AI Status" };
-                string[] newOutput = { runCount.ToString(), errorLog.Count.ToString(), DroneStatus };
-                writeToLine(lcdMain, time, true);
-                writeToLine(lcdMain, evenTextSpace(header, lcdMain), true);
-                writeToLine(lcdMain, matchTextSpace(header, newOutput, lcdMain), true);
-
+                else
+                {
+                    Echo("Error Initilizing");
+                    if (DEBUG) { }
+                }
             }
-            else
+            catch (Exception e)
             {
-                Echo("Error Initilizing");
-                if(DEBUG) {  }
+                exceptionHandler(e,115);
+                foreach (string str in eventLog)
+                {
+                    if (lcdMain != null)
+                    {
+                        writeToLine(lcdMain, str, true);
+                    }
+                }
             }
-
             // Runtime End //              
 
             //foreach(string str in errorLog){Echo(str);}            
@@ -164,7 +177,7 @@ namespace IngameScript
                 lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDMain");
                 if (lcdMain == null) { errorLog.Add("Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDMain to Ship\r\n"); return false; }
                 writeToLCD(lcdMain, "", false);
-                eventLog("Initialize lcdMain","lcdMain Available");
+                eventLog.Add("167 - Initialize lcdMain");
             }
             catch (Exception e)
             {
@@ -382,7 +395,7 @@ namespace IngameScript
                 else
                 {
                     Origin = new GPSlocation(oGPS);
-                    if (Origin.eventLog.Length > 0) { writeToLine(lcdMain, Origin.eventLog, true); }
+                    if (Origin.GPSeventLog.Length > 0) { eventLogger("Origin GPS Event Log", new string[]{ Origin.GPSeventLog } ); }
                     string comm = "";
                     string type = "";
                     if (Origin.customInfo.TryGetValue("OriginComm", out comm)) { OriginComm = comm; } else { OriginComm = "none"; }
@@ -484,13 +497,17 @@ namespace IngameScript
                 }
 
                 output += "}";
+
+                eventLog.Add(output);
+                if (DEBUG) { writeToLine(lcdMain, output, true); }
+                if (LCD_DEBUG) { Echo(output); }
             } 
-            catch (Exception e) 
+            catch (Exception ex) 
             {
-                exceptionHandler(e);
+                exceptionHandler(ex);
                 return false;
             }
-
+            return true;
         }
 
         public string exceptionHandler(Exception e, int codeLine = 0)
@@ -499,6 +516,7 @@ namespace IngameScript
 
             writeToLine(lcdMain, ("Error: " + exeptTXT), true);
             errorLog.Add(codeLine + " - Error: " + e.Message + "\nStack Trace ------->\n\t" + e.StackTrace + "\n");
+            eventLogger("Error:", new string[] { e.Message, e.StackTrace, ("codeLine: " + codeLine) });
 
             // Dump Log
             foreach(string str in eventLog){lcdMain.CustomData += str + "\r\n";}
@@ -680,16 +698,20 @@ namespace IngameScript
 
             int selector = 0;
 
-            for (int i = 0; i < 6; i++)
-            {
-                selector = (a.aiFitness[selector] > a.aiFitness[i]) ? selector : i;
-            }
-
             string stamp = DateTime.Now.ToString("HHmmssfff");
             GPSlocation nGPS = null;
             bool valid = false;
             while (!valid)
             {
+                for (int i = 0; i < 5; i++)
+                {
+                    selector = (a.aiFitness[selector] > a.aiFitness[i]) ? selector : i;
+                    writeToLine(lcdMain, ("709 - i: " + i), true);
+                    writeToLine(lcdMain, ("710 - selector = (a.aiFitness[" + selector + "] : " + a.aiFitness[selector] + ") > ( a.aiFitness[" + i + "] : " + a.aiFitness[i] + ")"), true);
+                }
+
+                writeToLine(lcdMain, ("712 - selector: " + selector), true);
+
                 switch (selector)
                 {
                     case 1:
@@ -718,10 +740,32 @@ namespace IngameScript
                         break;
                 }
 
-                foreach (GPSlocation g in knownCoords)
-                {
-                    nGPS.checkNear(g.gps,a.coordSpacing);
+                   
+                valid = true;
+                try {
+                    foreach (GPSlocation g in knownCoords)
+                    {
+                        if (!nGPS.checkNear(g.gps, a.coordSpacing))
+                        {
+                            valid = false;
+                            a.aiFitness[selector]--;
+                            break;
+                        }
+                    }
                 }
+                catch (Exception e) {
+                    writeToLine(lcdMain,("755 - " + e.Message + "\n" +  e.StackTrace), true);
+                    writeToLine(lcdMain, ("756 - selector:" + selector), true);
+                    if (nGPS != null) { writeToLine(lcdMain, ("nGPS : " + nGPS.ToString()), true); } else { writeToLine(lcdMain, ("nGPS = null"), true); }
+                    for (int i = 0; i < knownCoords.Count; i++) { writeToLine(lcdMain, ("KnownCoords[" + i + "] : " + knownCoords[i]), true); }
+                }
+                if (valid)
+                {
+                    writeToLine(lcdMain, nGPS.ToString(), true);
+                    a.aiFitness[selector]++;
+                    return nGPS;
+                }
+                    
             }
             return null;
         }
@@ -900,8 +944,6 @@ namespace IngameScript
 
             public int coordSpacing = 200;
             public int attempts = 0;
-
-            public bool poorResults = false;
 
             public void checkResults()
             {

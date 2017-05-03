@@ -1,24 +1,24 @@
 ﻿#region pre-script
-using System;
-using System.Text;
-using System.Collections;
-using System.Collections.Generic;
-using VRageMath;
-using VRage.Game;
-using Sandbox.ModAPI.Interfaces;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.Game.EntityComponents;
-using VRage.Game.Components;
-using VRage.Collections;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRage.Game.ModAPI.Ingame;
-using SpaceEngineers.Game.ModAPI.Ingame;
+    using System;
+    using System.Text;
+    using System.Collections;
+    using System.Collections.Generic;
+    using VRageMath;
+    using VRage.Game;
+    using Sandbox.ModAPI.Interfaces;
+    using Sandbox.ModAPI.Ingame;
+    using Sandbox.Game.EntityComponents;
+    using VRage.Game.Components;
+    using VRage.Collections;
+    using VRage.Game.ObjectBuilders.Definitions;
+    using VRage.Game.ModAPI.Ingame;
+    using SpaceEngineers.Game.ModAPI.Ingame;
 
-namespace IngameScript
-{
-    public class Program : MyGridProgram
+    namespace IngameScript
     {
-        #endregion
+        public class Program : MyGridProgram
+    {
+#endregion
     #region Variables
         // Coniguration:                
         int DefaultRadius = 5000;
@@ -87,6 +87,10 @@ namespace IngameScript
                             // Set Status -> Tranasmitting Data           
                             // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate           
                             Current = newCoordinate(AI);
+                            DroneStatus = "Exploring";
+                            
+                            remote.AddWaypoint(Current.name, Current.gps);
+                            remote.SetAutoPilotEnabled(true);
 
                             break;
                         case "Exploring":

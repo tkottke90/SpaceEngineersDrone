@@ -28,6 +28,7 @@ namespace IngameScript
 
         GPSlocation Origin = null;
         GPSlocation Current = null;
+        GPSlocation Previous = null;
                 
         // Utility                
         int runCount;
@@ -725,8 +726,21 @@ namespace IngameScript
                         nGPS.customInfo.Add("AISelector", ("" + selector));
                         break;
                     case 2:
-                        nGPS = new GPSlocation(stamp, addVectors());
-                        nGPS.customInfo.Add("AISelector", ("" + selector));
+                        if (knownCoords.Count >= 2)
+                        {
+                            GPSlocation addA = knownCoords[0]; 
+                            GPSlocation addB = knownCoords[1];
+
+                            knownCoords.RemoveAt(0);
+                            knownCoords.RemoveAt(1);
+
+                            Vector3D addC = addVectors(addA.gps, addB.gps);
+                            nGPS = new GPSlocation(stamp, addC);
+                            nGPS.customInfo.Add("AISelector", ("" + selector));
+
+                            knownCoords.Add(addA);
+                            knownCoords.Add(addB);
+                        }
                         break;
                     case 3:
                         nGPS = new GPSlocation(stamp, dotVector());
@@ -812,11 +826,13 @@ namespace IngameScript
             return new Vector3D(x, y, z); 
         }
 
-        public Vector3D addVectors() 
-        { 
-            double 
+        public Vector3D addVectors(Vector3D a, Vector3D b) 
+        {
+            double x = a.X + b.X;
+            double y = a.Y + b.Y;
+            double z = a.Z + b.Z;
             
-            return new Vector3D(0, 0, 0); 
+            return new Vector3D(x, y, z); 
         }
 
         public Vector3D dotVector() { return new Vector3D(0, 0, 0); }

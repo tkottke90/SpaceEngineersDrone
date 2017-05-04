@@ -88,13 +88,23 @@
                             // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate           
                             Current = newCoordinate(AI);
                             DroneStatus = "Exploring";
-                            
-                            remote.AddWaypoint(Current.name, Current.gps);
+
+                            remote.ClearWaypoints();
+
+                            remote.AddWaypoint(Current.gps, Current.name);
                             remote.SetAutoPilotEnabled(true);
 
                             break;
                         case "Exploring":
                             // Autopilot enabled and going to destination           
+
+                            if (!remote.IsAutoPilotEnabled)
+                            {
+                                DroneStatus = "Test";
+                            }
+
+                            break;
+                        case "Test":
 
                             break;
                         default:
@@ -713,11 +723,7 @@
                 for (int i = 0; i < 5; i++)
                 {
                     selector = (a.aiFitness[selector] > a.aiFitness[i]) ? selector : i;
-                    writeToLine(lcdMain, ("709 - i: " + i), true);
-                    writeToLine(lcdMain, ("710 - selector = (a.aiFitness[" + selector + "] : " + a.aiFitness[selector] + ") > ( a.aiFitness[" + i + "] : " + a.aiFitness[i] + ")"), true);
                 }
-
-                writeToLine(lcdMain, ("712 - selector: " + selector), true);
 
                 switch (selector)
                 {

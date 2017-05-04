@@ -55,7 +55,6 @@
 
         // Navigation                 
         List<GPSlocation> knownCoords = new List<GPSlocation>();
-        List<GPSlocation> testedLocations = new List<GPSlocation>();
         List<GPSlocation> poi = new List<GPSlocation>();  // Script will keep coordinates of locations it finds along the way       
 
         // AI Variables          
@@ -974,9 +973,12 @@
         {
             // [1: Random Coordinate - 2: Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product - 6: Points of Interest]     
             public List<int> aiFitness = new List<int>() { 0, -1, -2, -3, -5, -1 };
+            public List<bool> fitnessValid = new List<bool>() {true, false, false, false, false, false}
 
             public int coordSpacing = 200;
             public int attempts = 0;
+
+            List<GPSlocation> testedLocations = new List<GPSlocation>();
 
             public void checkResults()
             {
@@ -1006,6 +1008,99 @@
                 }
             }
         }
+
+        public class SensorModule
+        {
+            IMySensorBlock player; bool playerDetect;
+            IMySensorBlock ship; bool shipDetect;
+            IMySensorBlock asteriod; bool astDetect;
+
+            //Auto Detect Sensors
+            public SensorModule(bool AUTOCONFIG)
+            {
+                if(AUTOCONFIG)
+                {
+                    List<IMyTerminalBlock> sense = new List<IMyTerminalBlock>();
+                    GridTerminalSystem.GetBlocksOfType<IMySensorBlock>(sense);
+
+                    
+                }
+            }
+
+            // Sensors Known
+            public SensorModule(IMySensorBlock a, IMySensorBlock s = null, IMySensorBlock p = null)
+            {
+                player = p;
+                ship = s;
+                asteriod = a;
+            }
+
+            public bool sweepArea()
+            {
+                astDetect = asteriod.IsActive;
+
+            }
+
+            public bool maxRange(IMySensorBlock sensor)
+            {
+                try{
+                    sensor.BackExtend = sensor.MaxRange;
+                    sensor.bottomExtend = sensor.MaxRange;
+                    sensor.FrontExtend = sensor.MaxRange;
+                    sensor.LeftExtend = sensor.MaxRange;
+                    sensor.RightExtend = sensor.MaxRange;
+                    sensor.TopExtend = sensor.MaxRange;
+                    return true;
+                }catch(Exception e){return false;}
+            }
+
+            public bool OnOff(IMySensorBlock sensor)
+            {
+                sensor.SetValue("OnOff", !s.GetValue("OnOff"));
+            }
+
+            public bool setDetectAsteriod(IMySensorBlock s)
+            {
+                try{
+                    s.ApplyAction("Detect Players_Off");
+                    s.ApplyAction("Detect Floating Objects_Off");
+                    s.ApplyAction("Detect Small Ships_Off");
+                    s.ApplyAction("Detect Large Ships_Off");
+                    s.ApplyAction("Detect Stations_Off");
+                    s.ApplyAction("Detect Asteroids_On");
+                    return true;
+                }catch(Exception e){return false;}
+            }
+
+            public bool setDetectShip(IMySensorBlock s)
+            {
+                try{
+                    s.SetValue("OnOff", false);
+                    s.ApplyAction("Detect Players_Off");
+                    s.ApplyAction("Detect Floating Objects_Off");
+                    s.ApplyAction("Detect Small Ships_On");
+                    s.ApplyAction("Detect Large Ships_On");
+                    s.ApplyAction("Detect Stations_Off");
+                    s.ApplyAction("Detect Asteroids_Off");
+                    return true;
+                }catch(Exception e){return false;}
+            }
+
+            public bool setDetectPlayer(IMySensorBlock s)
+            {
+                try{
+                    s.SetValue("OnOff", false);
+                    s.ApplyAction("Detect Players_On");
+                    s.ApplyAction("Detect Floating Objects_Off");
+                    s.ApplyAction("Detect Small Ships_Off");
+                    s.ApplyAction("Detect Large Ships_Off");
+                    s.ApplyAction("Detect Stations_Off");
+                    s.ApplyAction("Detect Asteroids_Off");
+                    return true;
+                }catch(Exception e){return false;}                    
+            }
+        }
+        
     #endregion
     #region post-script
     }

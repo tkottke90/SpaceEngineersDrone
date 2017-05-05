@@ -973,7 +973,7 @@
         {
             // [1: Random Coordinate - 2: Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product - 6: Points of Interest]     
             public List<int> aiFitness = new List<int>() { 0, -1, -2, -3, -5, -1 };
-            public List<bool> fitnessValid = new List<bool>() {true, false, false, false, false, false}
+            public List<bool> fitnessValid = new List<bool>() { true, false, false, false, false, false };
 
             public int coordSpacing = 200;
             public int attempts = 0;
@@ -1016,12 +1016,19 @@
             IMySensorBlock asteriod; bool astDetect;
 
             //Auto Detect Sensors
-            public SensorModule(bool AUTOCONFIG)
+            public SensorModule(bool AUTOCONFIG, List<IMyTerminalBlock> sense)
             {
                 if(AUTOCONFIG)
                 {
-                    List<IMyTerminalBlock> sense = new List<IMyTerminalBlock>();
-                    GridTerminalSystem.GetBlocksOfType<IMySensorBlock>(sense);
+                    if (!sense.Exists(c => c.CustomName.Equals("Sensor [asteriod]")))
+                    {
+
+                    }
+                    else
+                    {
+                        asteriod = (IMySensorBlock) sense[sense.FindIndex(c => c.CustomName.Contains("[asteroid]"))];
+                    }
+                    
 
                     
                 }
@@ -1039,13 +1046,14 @@
             {
                 astDetect = asteriod.IsActive;
 
+                return true;
             }
 
             public bool maxRange(IMySensorBlock sensor)
             {
                 try{
                     sensor.BackExtend = sensor.MaxRange;
-                    sensor.bottomExtend = sensor.MaxRange;
+                    sensor.BottomExtend = sensor.MaxRange;
                     sensor.FrontExtend = sensor.MaxRange;
                     sensor.LeftExtend = sensor.MaxRange;
                     sensor.RightExtend = sensor.MaxRange;
@@ -1056,7 +1064,8 @@
 
             public bool OnOff(IMySensorBlock sensor)
             {
-                sensor.SetValue("OnOff", !s.GetValue("OnOff"));
+                sensor.SetValue("OnOff", !sensor.GetValue<bool>("OnOff"));
+                return true;
             }
 
             public bool setDetectAsteriod(IMySensorBlock s)

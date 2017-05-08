@@ -16,10 +16,10 @@
 
     namespace IngameScript
     {
-        public class Program : MyGridProgram
+    public class Program : MyGridProgram
     {
-#endregion
-    #region Variables
+        #endregion
+        #region Variables
         // Coniguration:                
         int DefaultRadius = 5000;
         string OriginType;
@@ -29,12 +29,12 @@
         GPSlocation Origin = null;
         GPSlocation Current = null;
         GPSlocation Previous = null;
-                
+
         // Utility                
         int runCount;
         string terminalData;
         string newTerminalData;
-        bool DEBUG = false; // Displays Debug Info in LCDMain if Enabled
+        bool DEBUG = true; // Displays Debug Info in LCDMain if Enabled
         bool LCD_DEBUG = false;  // Displays LCD Debug Info in LCDMain if Enabled
         bool AUTOCONFIG = true;  // Will Automatically Configure Block Storage/Information if enabled
         public Dictionary<double, int> lcdSettings = new Dictionary<double, int>(){
@@ -49,7 +49,6 @@
         List<IMyGyro> blackbox = new List<IMyGyro>();
         IMyLaserAntenna comm;
         List<IMyTextPanel> lcds = new List<IMyTextPanel>();
-        public Dictionary<string, IMySensorBlock> sensors = new Dictionary<string, IMySensorBlock>(){ { "asteriod", null }, {"ship", null}, { "player", null } };
         List<string> errorLog = new List<string>();
         List<string> eventLog = new List<string>();
 
@@ -57,11 +56,15 @@
         List<GPSlocation> knownCoords = new List<GPSlocation>();
         List<GPSlocation> poi = new List<GPSlocation>();  // Script will keep coordinates of locations it finds along the way       
 
+        // Modules
+        AIModule AI;
+        SensorModule SM;
+
         // AI Variables          
         int coordSpacing = 200;
         int[] genCoordFitness = new int[6]; // [1: Random Coordinate - 2: Inverted Coordinate 3:Vector Addition - 4:Vector Dot Product - 5: Vector Cross Product - 6: Points of Interest]              
         int attempts = 0;
-    #endregion
+        #endregion
 
         public void Main(string argument)
         {
@@ -126,7 +129,7 @@
             }
             catch (Exception e)
             {
-                exceptionHandler(e,115);
+                exceptionHandler(e, 133);
                 foreach (string str in eventLog)
                 {
                     if (lcdMain != null)
@@ -153,12 +156,12 @@
 
                 Me.CustomData = updatePrefs;
             }
-            catch (Exception e) { 
-                if(DEBUG) { exceptionHandler(e,128); }
+            catch (Exception e) {
+                if (DEBUG) { exceptionHandler(e, 128); }
             }
         }
 
-    #region Utility Methods 
+        #region Utility Methods 
         public bool getRemote()
         {
             List<IMyTerminalBlock> l0 = new List<IMyTerminalBlock>(); // Remote Control
@@ -186,191 +189,115 @@
 
             // Set Variables                            
             // Main LCD:    
+            try
+            {
+                lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDMain");
+                if (lcdMain == null) { errorLog.Add("Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDMain to Ship\r\n"); return false; }
+                writeToLCD(lcdMain, "", false);
+                eventLog.Add("167 - Initialize lcdMain");
+            }
+            catch (Exception e)
+            {
+                Echo(e.ToString().Split(':')[0].Split('.')[1]);
+                return false;
+            }
+            // Other LCDs:            
+            /*            
+                Status - [lcdStatus] General information about drone            
+                Remote Status - [lcdRemote] - Status of the Remote Control (Autopilot On/Off - Waypoints Set)            
+                Fuel Status - [lcdFuel] - Status of fuel systems            
+                ?Damage Status - [lcdDamage] - Reports on any ship damage            
+                Data Package Info - [lcdData] - Shows the data currently packaged and awaiting to be sent back to base through a laser antenna and             
+                    inter-grid connections            
+
+                Input - [lcdInput] - Will display fields in customData and Public Text.  The user can update the custom data            
+            */
+            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(l1);
+            foreach (IMyTextPanel txt in l1)
+            {
+                string output = "";
+                writeToLCD(txt, "", false);
+                //txt.SetValue("FontSize", (float)0.5);            
+                string[] customData = txt.CustomData.Split('\n');
+
+                if (LCD_DEBUG) { writeToLine(lcdMain, ("145 - LCD Panel (txt) = " + txt.CustomName), true); }
+
+                if (txt.CustomName.Contains("[lcdStatus]")) { output += drawLCDStatus(txt); }
+                if (txt.CustomName.Contains("[lcdRemote]")) { output += drawLCDRemote(txt); }
+                if (txt.CustomName.Contains("[lcdFuel]")) { output += drawLCDFuel(txt); }
+                if (txt.CustomName.Contains("[lcdDamage]")) { output += drawLCDDamage(txt); }
+                if (txt.CustomName.Contains("[lcdData]")) { output += drawLCDData(txt); }
+
                 try
                 {
-                    lcdMain = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("LCDMain");
-                    if (lcdMain == null) { errorLog.Add("Error: Missing LCDStatus - \r\n Please Add LCD Panel Named LCDMain to Ship\r\n"); return false; }
-                    writeToLCD(lcdMain, "", false);
-                    eventLog.Add("167 - Initialize lcdMain");
+                    writeToLCD(txt, output, true);
                 }
                 catch (Exception e)
                 {
-                    Echo(e.ToString().Split(':')[0].Split('.')[1]);
-                    return false;
+                    writeToLine(lcdMain, exceptionHandler(e, 156), true);
                 }
-            // Other LCDs:            
-                /*            
-                    Status - [lcdStatus] General information about drone            
-                    Remote Status - [lcdRemote] - Status of the Remote Control (Autopilot On/Off - Waypoints Set)            
-                    Fuel Status - [lcdFuel] - Status of fuel systems            
-                    ?Damage Status - [lcdDamage] - Reports on any ship damage            
-                    Data Package Info - [lcdData] - Shows the data currently packaged and awaiting to be sent back to base through a laser antenna and             
-                        inter-grid connections            
-                
-                    Input - [lcdInput] - Will display fields in customData and Public Text.  The user can update the custom data            
-                */
-                GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(l1);
-                foreach (IMyTextPanel txt in l1)
-                {
-                    string output = "";
-                    writeToLCD(txt, "", false);
-                    //txt.SetValue("FontSize", (float)0.5);            
-                    string[] customData = txt.CustomData.Split('\n');
+            }
 
-                    if (LCD_DEBUG) { writeToLine(lcdMain, ("145 - LCD Panel (txt) = " + txt.CustomName), true); }
-
-                    if (txt.CustomName.Contains("[lcdStatus]")) { output += drawLCDStatus(txt); }
-                    if (txt.CustomName.Contains("[lcdRemote]")) { output += drawLCDRemote(txt); }
-                    if (txt.CustomName.Contains("[lcdFuel]")) { output += drawLCDFuel(txt); }
-                    if (txt.CustomName.Contains("[lcdDamage]")) { output += drawLCDDamage(txt); }
-                    if (txt.CustomName.Contains("[lcdData]")) { output += drawLCDData(txt); }
-
-                    try
-                    {
-                        writeToLCD(txt, output, true);
-                    }
-                    catch (Exception e)
-                    {
-                        writeToLine(lcdMain, exceptionHandler(e, 156), true);
-                    }
-                }
-
-                initProgress++;
+            initProgress++;
             // BlackBox Storage in Gyroscopes            
-                GridTerminalSystem.GetBlocksOfType<IMyGyro>(l3);
+            GridTerminalSystem.GetBlocksOfType<IMyGyro>(l3);
 
-                if (l3.Count != 0)
+            if (l3.Count != 0)
+            {
+                for (int i = 0; i < l3.Count; i++)
                 {
-                    for (int i = 0; i < l3.Count; i++)
+                    string storageData = l3[i].CustomData;
+                    string[] sData = storageData.Split('\n')[0].Split(':');
+
+                    writeToLine(lcdMain, storageData, true);
+
+                    if (!blackbox.Contains((IMyGyro)l3[i]))
                     {
-                        string storageData = l3[i].CustomData;
-                        string[] sData = storageData.Split('\n')[0].Split(':');
-
-                        writeToLine(lcdMain, storageData, true);
-
-                        if (!blackbox.Contains((IMyGyro)l3[i]))
-                        {
-                            blackbox.Add((IMyGyro)l3[i]);
-                            l3[i].CustomData = "";
-                        }
+                        blackbox.Add((IMyGyro)l3[i]);
+                        l3[i].CustomData = "";
                     }
-                    initProgress++;
-                    if (DEBUG) { writeToLine(lcdMain,("Gyroscopes Added: " + blackbox.Count),true); }
                 }
-                else { return false; }
+                initProgress++;
+                if (DEBUG) { writeToLine(lcdMain, ("Gyroscopes Added: " + blackbox.Count), true); }
+            }
+            else { return false; }
 
             // Laser Antennas            
-                //GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(l2);           
-                //comm = (IMyLaserAntenna)l2[0];            
+            //GridTerminalSystem.GetBlocksOfType<IMyLaserAntenna>(l2);           
+            //comm = (IMyLaserAntenna)l2[0];            
 
             // Sensors
-                GridTerminalSystem.GetBlocksOfType<IMySensorBlock>(l4);
-                foreach (IMyTerminalBlock s in l4)
-                {
-                    string sensorName = s.CustomName;
-                    switch (sensorName)
-                    {
-                        case "Sensor [asteriod]":
-                            if (sensors["asteriod"] == null) {
-                                s.CustomName = "Sensor [asteriod]";
-                                s.SetValue("OnOff", false);
-                                s.ApplyAction("Detect Players_Off");
-                                s.ApplyAction("Detect Floating Objects_Off");
-                                s.ApplyAction("Detect Small Ships_Off");
-                                s.ApplyAction("Detect Large Ships_Off");
-                                s.ApplyAction("Detect Stations_Off");
-                                s.ApplyAction("Detect Asteroids_On");
-                                sensors["asteriod"] = (IMySensorBlock)s;
-                            }
-                            break;
-                        case "Sensor [ship]":
-                            if (sensors["ship"] == null) {
-                                s.CustomName = "Sensor [ship]";
-                                s.SetValue("OnOff", false);
-                                s.ApplyAction("Detect Players_Off");
-                                s.ApplyAction("Detect Floating Objects_Off");
-                                s.ApplyAction("Detect Small Ships_On");
-                                s.ApplyAction("Detect Large Ships_On");
-                                s.ApplyAction("Detect Stations_Off");
-                                s.ApplyAction("Detect Asteroids_Off");
-                                sensors["ship"] = (IMySensorBlock)s;
-                            }
-                            break;
-                        case "Sensor [player]":
-                            if(sensors["player"] == null) {
-                                s.CustomName = "Sensor [player]";
-                                s.SetValue("OnOff", false);
-                                s.ApplyAction("Detect Players_On");
-                                s.ApplyAction("Detect Floating Objects_Off");
-                                s.ApplyAction("Detect Small Ships_Off");
-                                s.ApplyAction("Detect Large Ships_Off");
-                                s.ApplyAction("Detect Stations_Off");
-                                s.ApplyAction("Detect Asteroids_Off");
-                                sensors["player"] = (IMySensorBlock)s;
-                            }
-                            break;
-                        default:
-                            if (AUTOCONFIG)
-                            {
-                                if (sensors["asteriod"] == null)
-                                {
-                                    s.CustomName = "Sensor [asteriod]";
-                                    s.SetValue("OnOff", false);
-                                    s.ApplyAction("Detect Players_Off");
-                                    s.ApplyAction("Detect Floating Objects_Off");
-                                    s.ApplyAction("Detect Small Ships_Off");
-                                    s.ApplyAction("Detect Large Ships_Off");
-                                    s.ApplyAction("Detect Stations_Off");
-                                    s.ApplyAction("Detect Asteroids_On");
-                                    sensors["asteriod"] = (IMySensorBlock)s;
-                                }
-                                else if (sensors["ship"] == null)
-                                {
-                                    s.CustomName = "Sensor [ship]";
-                                    s.SetValue("OnOff", false);
-                                    s.ApplyAction("Detect Players_Off");
-                                    s.ApplyAction("Detect Floating Objects_Off");
-                                    s.ApplyAction("Detect Small Ships_On");
-                                    s.ApplyAction("Detect Large Ships_On");
-                                    s.ApplyAction("Detect Stations_Off");
-                                    s.ApplyAction("Detect Asteroids_Off");
-                                    sensors["ship"] = (IMySensorBlock)s;
-                                }
-                                else if (sensors["player"] == null)
-                                {
-                                    s.CustomName = "Sensor [player]";
-                                    s.SetValue("OnOff", false);
-                                    s.ApplyAction("Detect Players_On");
-                                    s.ApplyAction("Detect Floating Objects_Off");
-                                    s.ApplyAction("Detect Small Ships_Off");
-                                    s.ApplyAction("Detect Large Ships_Off");
-                                    s.ApplyAction("Detect Stations_Off");
-                                    s.ApplyAction("Detect Asteroids_Off");
-                                    sensors["player"] = (IMySensorBlock)s;
-                                }
-                                else if (s.CustomName != "Sensor" || !s.CustomName.Contains("[]"))
-                                {
-                                    s.CustomName = "Sensor [extra]";
-                                }
-                            }
-                            break;
-                    }
-                }
-
+            GridTerminalSystem.GetBlocksOfType<IMySensorBlock>(l4);
+            try
+            {
+                SM = SensorModule.CreateModule(true, l4);
+                if (DEBUG && SM.SMeventLog.Count > 0) { foreach (string str in SM.SMeventLog) { writeToLine(lcdMain, str, true); } }
+                string[] eStr = new string[3];
+                eStr[0] = SM.asteriod != null ? SM.asteriod.CustomName : "null";
+                eStr[1] = SM.ship != null ? SM.ship.CustomName : "null";
+                eStr[2] = SM.player != null ? SM.player.CustomName : "null";
+                eventLogger("Sensor Initialization: Success", new string[] { ("Asteroid: " + eStr[0]), ("Ship: " + eStr[1]), ("Player: " + eStr[2]) });
+            }
+            catch (MissingBlockException e)
+            {
+                exceptionHandler(e,279);
+                SM.resetSensors(l4);
+                return false;
+            }
             // Get Known Data           
-                string[] rawData = terminalData.Split('\n');
-                foreach (string str in rawData)
+            string[] rawData = terminalData.Split('\n');
+            foreach (string str in rawData)
+            {
+                GPSlocation gps = new GPSlocation(str); bool compare = false;
+
+                foreach (GPSlocation g in knownCoords)
                 {
-                    GPSlocation gps = new GPSlocation(str); bool compare = false;
-
-                    foreach (GPSlocation g in knownCoords)
-                    {
-                        if (gps.ToString() == g.ToString()) { compare = true; }
-                    }
-
-                    if (!compare) { knownCoords.Add(gps); writeToLine(lcdMain, ("Added: " + str), true); }
+                    if (gps.ToString() == g.ToString()) { compare = true; }
                 }
-                initProgress++;
+
+                if (!compare) { knownCoords.Add(gps); writeToLine(lcdMain, ("Added: " + str), true); }
+            }
+            initProgress++;
 
 
             if (DEBUG) { writeToLine(lcdMain, "194 - Set Variables Initalized", true); }
@@ -385,116 +312,116 @@
             string[] prefs = pref.Split('\n');
 
             // Default Radius               
-                try
-                {
-                    DefaultRadius = Int32.Parse(prefs[1].Split('|')[1]);
-                }
-                catch (Exception e)
-                {
-                    if (DEBUG) { Echo("204 - " + e.ToString()); }
-                    exceptionHandler(e, 205);
-                    DefaultRadius = 5000;
-                }
-                initProgress++;
+            try
+            {
+                DefaultRadius = Int32.Parse(prefs[1].Split('|')[1]);
+            }
+            catch (Exception e)
+            {
+                if (DEBUG) { Echo("204 - " + e.ToString()); }
+                exceptionHandler(e, 205);
+                DefaultRadius = 5000;
+            }
+            initProgress++;
             // Origin GPS                                                                                           //Origin = new GPSlocation("Origin",remote.GetPosition());             
-                try
+            try
+            {
+                string oGPS = prefs[2].Split('|')[1];
+                if (prefs[2].Length <= 12)
                 {
-                    string oGPS = prefs[2].Split('|')[1];
-                    if (prefs[2].Length <= 12)
-                    {
-                        Origin = new GPSlocation("Origin", remote.GetPosition());
-                        Origin.customInfo.Add("OriginType", "Stationary");
-                        Origin.customInfo.Add("OriginComm", "none");
-                        OriginComm = "none";
-                        OriginType = "Stationary";
-                    }
-                    else
-                    {
-                        Origin = new GPSlocation(oGPS);
-                        if (Origin.GPSeventLog.Length > 0) { eventLogger("Origin GPS Event Log", new string[]{ Origin.GPSeventLog } ); }
-                        string comm = "";
-                        string type = "";
-                        if (Origin.customInfo.TryGetValue("OriginComm", out comm)) { OriginComm = comm; } else { OriginComm = "none"; }
-                        if (Origin.customInfo.TryGetValue("OriginType", out type)) { OriginType = type; } else { OriginType = "Stationary"; }
-                    }
-                }
-                catch (Exception e)
-                {
-                    if (DEBUG) { Echo("226 - " + e.ToString()); }
-                    exceptionHandler(e, 227);
                     Origin = new GPSlocation("Origin", remote.GetPosition());
                     Origin.customInfo.Add("OriginType", "Stationary");
                     Origin.customInfo.Add("OriginComm", "none");
                     OriginComm = "none";
                     OriginType = "Stationary";
                 }
-                initProgress++;
+                else
+                {
+                    Origin = new GPSlocation(oGPS);
+                    if (Origin.GPSeventLog.Length > 0) { eventLogger("Origin GPS Event Log", new string[] { Origin.GPSeventLog }); }
+                    string comm = "";
+                    string type = "";
+                    if (Origin.customInfo.TryGetValue("OriginComm", out comm)) { OriginComm = comm; } else { OriginComm = "none"; }
+                    if (Origin.customInfo.TryGetValue("OriginType", out type)) { OriginType = type; } else { OriginType = "Stationary"; }
+                }
+            }
+            catch (Exception e)
+            {
+                if (DEBUG) { Echo("226 - " + e.ToString()); }
+                exceptionHandler(e, 227);
+                Origin = new GPSlocation("Origin", remote.GetPosition());
+                Origin.customInfo.Add("OriginType", "Stationary");
+                Origin.customInfo.Add("OriginComm", "none");
+                OriginComm = "none";
+                OriginType = "Stationary";
+            }
+            initProgress++;
             //Drone Status              
-                try
-                {
-                    DroneStatus = prefs[3].Split('|')[1].Trim();
-                    if (DroneStatus == "") { DroneStatus = "Idle"; }
-                }
-                catch (Exception e)
-                {
-                    if (DEBUG) { Echo("239 - " + e.ToString()); }
-                    exceptionHandler(e, 240);
-                    DroneStatus = "Idle";
-                }
-                initProgress++;
+            try
+            {
+                DroneStatus = prefs[3].Split('|')[1].Trim();
+                if (DroneStatus == "") { DroneStatus = "Idle"; }
+            }
+            catch (Exception e)
+            {
+                if (DEBUG) { Echo("239 - " + e.ToString()); }
+                exceptionHandler(e, 240);
+                DroneStatus = "Idle";
+            }
+            initProgress++;
             // Runtime Count             
-                try
-                {
-                    runCount = Int32.TryParse(prefs[4].Split('|')[1], out j) ? j : 0;
-                    runCount++;
-                }
-                catch (Exception e)
-                {
-                    runCount = 0;
-                    if (DEBUG) { Echo("249 - " + e.ToString()); }
-                    exceptionHandler(e, 249);
-                }
-                initProgress++;
+            try
+            {
+                runCount = Int32.TryParse(prefs[4].Split('|')[1], out j) ? j : 0;
+                runCount++;
+            }
+            catch (Exception e)
+            {
+                runCount = 0;
+                if (DEBUG) { Echo("249 - " + e.ToString()); }
+                exceptionHandler(e, 249);
+            }
+            initProgress++;
             // AIAttempts          
-                try
-                {
-                    a.attempts = Int32.TryParse(prefs[5].Split('|')[1], out j) ? j : 0;
-                }
-                catch (Exception e)
-                {
-                    a.attempts = 0;
-                    if (DEBUG) { Echo("257 - " + e.ToString()); }
-                    exceptionHandler(e, 256);
-                }
-                initProgress++;
+            try
+            {
+                a.attempts = Int32.TryParse(prefs[5].Split('|')[1], out j) ? j : 0;
+            }
+            catch (Exception e)
+            {
+                a.attempts = 0;
+                if (DEBUG) { Echo("257 - " + e.ToString()); }
+                exceptionHandler(e, 256);
+            }
+            initProgress++;
             // AISpacing          
-                try
-                {
-                    a.coordSpacing = Int32.TryParse(prefs[6].Split('|')[1], out j) ? j : 0;
-                }
-                catch (Exception e)
-                {
-                    a.coordSpacing = 200;
-                    if (DEBUG) { Echo("265 - " + e.ToString()); }
-                    exceptionHandler(e, 263);
-                }
-                initProgress++;
+            try
+            {
+                a.coordSpacing = Int32.TryParse(prefs[6].Split('|')[1], out j) ? j : 0;
+            }
+            catch (Exception e)
+            {
+                a.coordSpacing = 200;
+                if (DEBUG) { Echo("265 - " + e.ToString()); }
+                exceptionHandler(e, 263);
+            }
+            initProgress++;
             // AI Fitness         
-                try
+            try
+            {
+                string[] fitnessArray = prefs[7].Split('|')[1].Split('*');
+                for (int i = 0; i < fitnessArray.Length; i++)
                 {
-                    string[] fitnessArray = prefs[7].Split('|')[1].Split('*');
-                    for (int i = 0; i < fitnessArray.Length; i++)
-                    {
-                        a.aiFitness[i] = Int32.TryParse(fitnessArray[i], out j) ? j : 0;
-                    }
+                    a.aiFitness[i] = Int32.TryParse(fitnessArray[i], out j) ? j : 0;
                 }
-                catch (Exception e)
-                {
-                    if (DEBUG) { Echo("275- " + e.ToString()); }
-                    exceptionHandler(e, 272);
-                    a.aiFitness = new List<int>() { 0, -1, -2, -3, -5, -1 };
-                }
-                initProgress++;
+            }
+            catch (Exception e)
+            {
+                if (DEBUG) { Echo("275- " + e.ToString()); }
+                exceptionHandler(e, 272);
+                a.aiFitness = new List<int>() { 0, -1, -2, -3, -5, -1 };
+            }
+            initProgress++;
         }
 
         public bool eventLogger(string eventName, string[] eventData, Exception e = null)
@@ -502,12 +429,12 @@
             try
             {
                 string output = eventName + "{ \n\t";
-                foreach(string str in eventData)
+                foreach (string str in eventData)
                 {
                     output += str + "\n\t";
                 }
 
-                if(e != null)
+                if (e != null)
                 {
                     output += e.Message + "\n \n\t" + e.StackTrace + "\n";
                 }
@@ -515,10 +442,10 @@
                 output += "}";
 
                 eventLog.Add(output);
-                if (DEBUG) { writeToLine(lcdMain, output, true); }
+                if (DEBUG) { writeToLine(lcdMain, ("New Event Log: " + output), true); }
                 if (LCD_DEBUG) { Echo(output); }
-            } 
-            catch (Exception ex) 
+            }
+            catch (Exception ex)
             {
                 exceptionHandler(ex);
                 return false;
@@ -529,18 +456,19 @@
         public string exceptionHandler(Exception e, int codeLine = 0)
         {
             string exeptTXT = e.ToString().Split(':')[0].Split('.')[1];
+            DateTime now = DateTime.Now;
 
-            writeToLine(lcdMain, ("Error: " + exeptTXT), true);
+            if (DEBUG) { writeToLine(lcdMain, (codeLine + " - Error Log: " + exeptTXT), true); }
             errorLog.Add(codeLine + " - Error: " + e.Message + "\nStack Trace ------->\n\t" + e.StackTrace + "\n");
-            eventLogger("Error:", new string[] { e.Message, e.StackTrace, ("codeLine: " + codeLine) });
+            eventLogger("Error:", new string[] { now.ToString(), runCount.ToString(), e.Message, e.StackTrace, ("codeLine: " + codeLine) });
 
             // Dump Log
-            foreach(string str in eventLog){lcdMain.CustomData += str + "\r\n";}
+            foreach (string str in eventLog) { lcdMain.CustomData += str + "\r\n"; }
 
             return ("Error: " + exeptTXT);
         }
-    #endregion
-    #region LCD Methods              
+        #endregion
+        #region LCD Methods              
         public void writeToLCD(IMyTextPanel lcd, string output, bool append)
         {
             // Applys text to LCD Screens                 
@@ -560,7 +488,7 @@
             DateTime now = DateTime.Now;
             string[] newOutput = { now.ToString("T"), runCount.ToString(), errorLog.Count.ToString(), DroneStatus };
             string[] oldOutput = lcd.CustomData.Split('\n');
-            
+
             string output = evenTextSpace(header, lcd) + "\r\n"
                 + matchTextSpace(header, newOutput, lcd) + "\r\n";
 
@@ -669,15 +597,15 @@
                     dataSpacer = (strPrime[i].Length + spacerCount) - strBeta[i].Length;
                     if (LCD_DEBUG)
                     {
-                        writeToLine(lcdMain,"511 - strPrime[i].Length: " + strPrime[i].Length,true);
-                        writeToLine(lcdMain, "512 - spacerCount: " + spacerCount,true);
-                        writeToLine(lcdMain, "513 - strBeta[i].Length: " + strBeta[i].Length,true);
-                        writeToLine(lcdMain, "514 - dataSpacer = " + dataSpacer,true);
+                        writeToLine(lcdMain, "511 - strPrime[i].Length: " + strPrime[i].Length, true);
+                        writeToLine(lcdMain, "512 - spacerCount: " + spacerCount, true);
+                        writeToLine(lcdMain, "513 - strBeta[i].Length: " + strBeta[i].Length, true);
+                        writeToLine(lcdMain, "514 - dataSpacer = " + dataSpacer, true);
                     }
                 }
                 catch (Exception e)
                 {
-                    if (LCD_DEBUG){
+                    if (LCD_DEBUG) {
                         Echo("510 - " + e.ToString());
                         Echo("511 - strPrime[i].Length: " + strPrime[i].Length);
                         Echo("512 - spacerCount: " + spacerCount);
@@ -707,8 +635,8 @@
             foreach (string str in text) { textCount += (float)str.Length; }
             return (fontSize - textCount) / (text.Length - 1);
         }
-    #endregion
-    #region Navigation Methods 
+        #endregion
+        #region Navigation Methods 
         public GPSlocation newCoordinate(AIModule a)
         {
 
@@ -737,7 +665,7 @@
                     case 2:
                         if (knownCoords.Count >= 2)
                         {
-                            GPSlocation addA = knownCoords[0]; 
+                            GPSlocation addA = knownCoords[0];
                             GPSlocation addB = knownCoords[1];
 
                             knownCoords.RemoveAt(0);
@@ -765,7 +693,7 @@
                         break;
                 }
 
-                   
+
                 valid = true;
                 try {
                     foreach (GPSlocation g in knownCoords)
@@ -779,7 +707,7 @@
                     }
                 }
                 catch (Exception e) {
-                    writeToLine(lcdMain,("755 - " + e.Message + "\n" +  e.StackTrace), true);
+                    writeToLine(lcdMain, ("755 - " + e.Message + "\n" + e.StackTrace), true);
                     writeToLine(lcdMain, ("756 - selector:" + selector), true);
                     if (nGPS != null) { writeToLine(lcdMain, ("nGPS : " + nGPS.ToString()), true); } else { writeToLine(lcdMain, ("nGPS = null"), true); }
                     for (int i = 0; i < knownCoords.Count; i++) { writeToLine(lcdMain, ("KnownCoords[" + i + "] : " + knownCoords[i]), true); }
@@ -790,7 +718,7 @@
                     a.aiFitness[selector]++;
                     return nGPS;
                 }
-                    
+
             }
             return null;
         }
@@ -811,7 +739,7 @@
                 return Convert.ToDouble(number * -1);
             }
         }
-        
+
         public Vector3D rndCoord()
         {
             double x = genRandomNumber();
@@ -820,7 +748,7 @@
             y = y + Origin.gps.Y;
             double z = genRandomNumber();
             z = z = Origin.gps.Z;
-            return new Vector3D(x,y,z);
+            return new Vector3D(x, y, z);
         }
 
         public Vector3D invCorrd()
@@ -832,16 +760,16 @@
             double z = (Current.gps.Z - Origin.gps.Z) * -1;
             z = z + Origin.gps.Z;
 
-            return new Vector3D(x, y, z); 
+            return new Vector3D(x, y, z);
         }
 
-        public Vector3D addVectors(Vector3D a, Vector3D b) 
+        public Vector3D addVectors(Vector3D a, Vector3D b)
         {
             double x = a.X + b.X;
             double y = a.Y + b.Y;
             double z = a.Z + b.Z;
-            
-            return new Vector3D(x, y, z); 
+
+            return new Vector3D(x, y, z);
         }
 
         public Vector3D dotVector() { return new Vector3D(0, 0, 0); }
@@ -850,8 +778,8 @@
 
         public Vector3D poiCoord() { return new Vector3D(0, 0, 0); }
 
-    #endregion
-    #region Nested Classes           
+        #endregion
+        #region Nested Classes           
         public class GPSlocation
         {
             public string name;
@@ -1011,35 +939,93 @@
 
         public class SensorModule
         {
-            IMySensorBlock player; bool playerDetect;
-            IMySensorBlock ship; bool shipDetect;
-            IMySensorBlock asteriod; bool astDetect;
+            public IMySensorBlock player; bool playerDetect;
+            public IMySensorBlock ship; bool shipDetect;
+            public IMySensorBlock asteriod; bool astDetect;
 
-            //Auto Detect Sensors
-            public SensorModule(bool AUTOCONFIG, List<IMyTerminalBlock> sense)
+            public List<String> SMeventLog = new List<String>();
+
+            // Module Pre Constructor Logic
+            public static SensorModule CreateModule(bool AUTOCONFIG, List<IMyTerminalBlock> gtsSense)
             {
-                if(AUTOCONFIG)
+                if (gtsSense == null)
                 {
-                    if (!sense.Exists(c => c.CustomName.Equals("Sensor [asteriod]")))
+                    return null;
+                }
+                else
+                {
+                    SensorModule SM = new SensorModule(gtsSense, AUTOCONFIG);
+                    if (SM != null)
                     {
-
+                        return SM;
                     }
                     else
                     {
-                        asteriod = (IMySensorBlock) sense[sense.FindIndex(c => c.CustomName.Contains("[asteroid]"))];
+                        throw new MissingBlockException("Missing Asteroid Sensor/No Sensor Available for Asteroid Sensor");
                     }
-                    
-
-                    
                 }
             }
 
-            // Sensors Known
-            public SensorModule(IMySensorBlock a, IMySensorBlock s = null, IMySensorBlock p = null)
+            //Detect Sensors
+            public SensorModule(List<IMyTerminalBlock> sense, bool AUTOCONFIG = false)
             {
-                player = p;
-                ship = s;
-                asteriod = a;
+                List<string> sensorNames = new List<string>() { "Sensor [asteroid]", "Sensor [ship]", "Sensor [player]" };
+                DateTime now = DateTime.Now;
+
+                for (int i = 0; i < sensorNames.Count; i++)
+                {
+                    if (AUTOCONFIG)
+                    {
+                        SMeventLog.Add("sense.Exists(c => c.CustomName.Equals(" + sensorNames[i] + ")) = " + sense.Exists(c => c.CustomName.Equals(sensorNames[i])));
+                        if (!sense.Exists(c => c.CustomName.Equals(sensorNames[i])))
+                        {
+
+                            foreach (IMyTerminalBlock t in sense)
+                            {
+                                SMeventLog.Add("sensorNames.Exists(s => t.CustomName.Equals(s)) = " + sensorNames.Exists(s => t.CustomName.Equals(s)));
+                                if (!sensorNames.Exists(s => t.CustomName.Equals(s)))
+                                {
+                                    
+                                    t.CustomName = sensorNames[i];
+                                    switch (i)
+                                    {
+                                        case 0: asteriod = (IMySensorBlock)t; setDetectAsteriod(asteriod); SMeventLog.Add(now + " - Initialized Asteriod Sensor (AUTOCONFIG)"); break;
+                                        case 1: ship = (IMySensorBlock)t; setDetectShip(ship); SMeventLog.Add(now + " - Initialized Ship Sensor (AUTOCONFIG)"); break;
+                                        case 2: player = (IMySensorBlock)t; setDetectPlayer(player); SMeventLog.Add(now + " - Initialized Player Sensor (AUTOCONFIG)"); break;
+                                    }
+                                }
+
+                            }
+                        }
+                        else
+                        {
+                            switch (i)
+                            {
+                                case 0: asteriod = (IMySensorBlock)sense[sense.FindIndex(c => c.CustomName.Equals(sensorNames[i]))]; SMeventLog.Add(now + " - New Asteriod Sensor"); break;
+                                case 1: ship = (IMySensorBlock)sense[sense.FindIndex(c => c.CustomName.Equals(sensorNames[i]))]; SMeventLog.Add(now + " - New Ship Sensor"); break;
+                                case 2: player = (IMySensorBlock)sense[sense.FindIndex(c => c.CustomName.Equals(sensorNames[i]))]; SMeventLog.Add(now + " - New Player Sensor"); break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (IMyTerminalBlock t in sense)
+                        {
+                            if (sensorNames.Exists(sn => sn.Equals(t.CustomName)))
+                            {
+                                int sI = sense.FindIndex(index => index.CustomName.Equals(t.CustomName));
+
+                                switch (sI)
+                                {
+                                    case 0: asteriod = (IMySensorBlock)t; setDetectAsteriod(asteriod); SMeventLog.Add(now + " - Initialized Asteriod Sensor"); break;
+                                    case 1: ship = (IMySensorBlock)t; setDetectShip(ship); SMeventLog.Add(now + " - Initialized Ship Sensor"); break;
+                                    case 2: player = (IMySensorBlock)t; setDetectPlayer(player); SMeventLog.Add(now + " - Initialized Player Sensor"); break;
+                                }
+                            }
+                        }
+                    }
+
+                }
             }
 
             public bool sweepArea()
@@ -1049,9 +1035,29 @@
                 return true;
             }
 
+            public bool resetSensors(List<IMyTerminalBlock> sensor)
+            {
+                try
+                {
+                    for(int counter = 0; counter < sensor.Count; counter++)
+                    {
+                        sensor[counter].CustomName = "Sensor " + counter;
+                    }
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    DateTime now = DateTime.Now;
+                    SMeventLog.Add("Error: {\r\n\t Time:" + now.ToString() + "\r\n\tTask: Reset Sensors Falied}");
+                    return false;
+                }
+
+            }
+
             public bool maxRange(IMySensorBlock sensor)
             {
-                try{
+                try {
                     sensor.BackExtend = sensor.MaxRange;
                     sensor.BottomExtend = sensor.MaxRange;
                     sensor.FrontExtend = sensor.MaxRange;
@@ -1059,7 +1065,7 @@
                     sensor.RightExtend = sensor.MaxRange;
                     sensor.TopExtend = sensor.MaxRange;
                     return true;
-                }catch(Exception e){return false;}
+                } catch (Exception e) { return false; }
             }
 
             public bool OnOff(IMySensorBlock sensor)
@@ -1070,7 +1076,8 @@
 
             public bool setDetectAsteriod(IMySensorBlock s)
             {
-                try{
+                try {
+                    s.CustomName = "Sensor [asteroid]";
                     s.ApplyAction("Detect Players_Off");
                     s.ApplyAction("Detect Floating Objects_Off");
                     s.ApplyAction("Detect Small Ships_Off");
@@ -1078,12 +1085,13 @@
                     s.ApplyAction("Detect Stations_Off");
                     s.ApplyAction("Detect Asteroids_On");
                     return true;
-                }catch(Exception e){return false;}
+                } catch (Exception e) { return false; }
             }
 
             public bool setDetectShip(IMySensorBlock s)
             {
-                try{
+                try {
+                    s.CustomName = "Sensor [ship]";
                     s.SetValue("OnOff", false);
                     s.ApplyAction("Detect Players_Off");
                     s.ApplyAction("Detect Floating Objects_Off");
@@ -1092,12 +1100,13 @@
                     s.ApplyAction("Detect Stations_Off");
                     s.ApplyAction("Detect Asteroids_Off");
                     return true;
-                }catch(Exception e){return false;}
+                } catch (Exception e) { return false; }
             }
 
             public bool setDetectPlayer(IMySensorBlock s)
             {
-                try{
+                try {
+                    s.CustomName = "Sensor [player]";
                     s.SetValue("OnOff", false);
                     s.ApplyAction("Detect Players_On");
                     s.ApplyAction("Detect Floating Objects_Off");
@@ -1106,8 +1115,15 @@
                     s.ApplyAction("Detect Stations_Off");
                     s.ApplyAction("Detect Asteroids_Off");
                     return true;
-                }catch(Exception e){return false;}                    
+                } catch (Exception e) { return false; }
             }
+        }
+
+        public class MissingBlockException : System.Exception
+        {
+            public MissingBlockException() : base() { }
+            public MissingBlockException(string message) : base(message) { }
+            public MissingBlockException(string message, System.Exception inner) : base(message, inner) { }
         }
         
     #endregion

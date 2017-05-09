@@ -1030,9 +1030,19 @@
 
             public bool sweepArea()
             {
-                astDetect = asteriod.IsActive;
-
-                return true;
+                try
+                {
+                    astDetect = asteriod.IsActive;
+                    shipDetect = ship.IsActive;
+                    playerDetect = player.IsActive;
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    DateTime now = DateTime.Now;
+                    SMeventLog.Add("Error: sweepArea() {\r\n\t Time: " + now.ToString() + "\r\n\tException: " + e.Message + "\r\n}");
+                    return false;
+                }
             }
 
             public bool resetSensors(List<IMyTerminalBlock> sensor)

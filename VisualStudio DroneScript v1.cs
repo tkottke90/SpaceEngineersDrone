@@ -59,6 +59,7 @@
         // Modules
         AIModule AI;
         SensorModule SM;
+        PowerModule PM;
 
         // AI Variables          
         int coordSpacing = 200;
@@ -79,7 +80,7 @@
             {
                 if (setVariables() && rem)
                 {
-                    if (DEBUG) { Echo("46 - setVariables = true"); writeToLine(lcdMain, "47 - setVariables = true", true); }
+                    if (DEBUG) { Echo("83 - setVariables = true"); writeToLine(lcdMain, "83 - setVariables = true", true); }
 
                     // Get Status and Respond           
                     switch (DroneStatus)
@@ -90,7 +91,7 @@
                             // Create new waypoint -> Check records for waypoint -> if new waypoint, investigate           
                             Current = newCoordinate(AI);
                             DroneStatus = "Exploring";
-
+                            SM.SensorModulePower();
                             remote.ClearWaypoints();
 
                             remote.AddWaypoint(Current.gps, Current.name);
@@ -103,6 +104,7 @@
                             if (!remote.IsAutoPilotEnabled)
                             {
                                 DroneStatus = "Test";
+                                SM.SensorModulePower();
                             }
 
                             break;
@@ -152,7 +154,8 @@
                     + "AIAttempts|" + attempts + "\r\n"
                     + "AICoordinateSpacing|" + coordSpacing + "\r\n"
                     + "AICalcFitness|"
-                    + String.Format("{0}*{1}*{2}*{3}*{4}*{5}", AI.aiFitness[0], AI.aiFitness[1], AI.aiFitness[2], AI.aiFitness[3], AI.aiFitness[4], AI.aiFitness[5]);
+                    + String.Format("{0}*{1}*{2}*{3}*{4}*{5}", AI.aiFitness[0], AI.aiFitness[1], AI.aiFitness[2], AI.aiFitness[3], AI.aiFitness[4], AI.aiFitness[5])
+                    + "\r\nSensorModulePower|" + SM.asteriod.GetValue<bool>("OnOff");
 
                 Me.CustomData = updatePrefs;
             }
@@ -184,7 +187,10 @@
             List<IMyTerminalBlock> l1 = new List<IMyTerminalBlock>(); // LCD Pannels                
             List<IMyTerminalBlock> l2 = new List<IMyTerminalBlock>(); // Laser Antenna            
             List<IMyTerminalBlock> l3 = new List<IMyTerminalBlock>(); // Gyroscopes            
-            List<IMyTerminalBlock> l4 = new List<IMyTerminalBlock>(); // Sensors          
+            List<IMyTerminalBlock> l4 = new List<IMyTerminalBlock>(); // Sensors
+            List<IMyTerminalBlock> l5 = new List<IMyTerminalBlock>(); // Reactors  
+            List<IMyTerminalBlock> l6 = new List<IMyTerminalBlock>(); // Solar Panels 
+            List<IMyTerminalBlock> l7 = new List<IMyTerminalBlock>(); // Batteries
             terminalData = Storage;
 
             // Set Variables                            
@@ -271,7 +277,8 @@
             try
             {
                 SM = SensorModule.CreateModule(true, l4);
-                if (DEBUG && SM.SMeventLog.Count > 0) { foreach (string str in SM.SMeventLog) { writeToLine(lcdMain, str, true); } }
+                if(Me.CustomData.Split('\n')[8].Split('|')[1] == "true") { SM.SensorModulePower(); }
+                if (DEBUG && SM.SMeventLog.Count > 0) { foreach (string str in SM.SMeventLog) { writeToLine(lcdMain, str, true); } writeToLine(lcdMain, ("SM Power Status: " + SM.asteriod.GetValue<bool>("OnOff")), true); }
                 string[] eStr = new string[3];
                 eStr[0] = SM.asteriod != null ? SM.asteriod.CustomName : "null";
                 eStr[1] = SM.ship != null ? SM.ship.CustomName : "null";
@@ -284,6 +291,37 @@
                 SM.resetSensors(l4);
                 return false;
             }
+
+
+            // Power Module
+            GridTerminalSystem.GetBlocksOfType<IMyReactor>(l5);
+            GridTerminalSystem.GetBlocksOfType<IMySolarPanel>(l6);
+            GridTerminalSystem.GetBlocksOfType<IMyBatteryBlock>(l7);
+
+            try
+            {
+                PM = new PowerModule(l5, l6, l7);
+                if (DEBUG)
+                {
+                    foreach (string str in PM.PMeventLog)
+                    {
+                        PM.getPowerOutput(1);
+                        writeToLine(lcdMain, str, true);
+                    }
+                }
+            }
+            catch (MissingBlockException e)
+            {
+                exceptionHandler(e, 305);
+                return false;
+            }
+            catch (Exception e)
+            {
+                exceptionHandler(e, 310);
+                foreach (string str in PM.PMeventLog) { writeToLine(lcdMain, str, true); }
+                return false;
+            }
+
             // Get Known Data           
             string[] rawData = terminalData.Split('\n');
             foreach (string str in rawData)
@@ -422,6 +460,18 @@
                 a.aiFitness = new List<int>() { 0, -1, -2, -3, -5, -1 };
             }
             initProgress++;
+            // Sensor Module Power Status
+            try
+            {
+                string smPower = prefs[8].Split('|')[1];
+                
+
+            }
+            catch (Exception e)
+            {
+
+            }
+
         }
 
         public bool eventLogger(string eventName, string[] eventData, Exception e = null)
@@ -955,7 +1005,7 @@
                 else
                 {
                     SensorModule SM = new SensorModule(gtsSense, AUTOCONFIG);
-                    if (SM != null)
+                    if (SM.asteriod != null)
                     {
                         return SM;
                     }
@@ -1078,6 +1128,23 @@
                 } catch (Exception e) { return false; }
             }
 
+            public bool SensorModulePower()
+            {
+                try
+                {
+                    OnOff(asteriod);
+                    OnOff(ship);
+                    OnOff(player);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    DateTime now = DateTime.Now;
+                    SMeventLog.Add("Error: SensorModulePower() {\r\n\t Time: " + now.ToString() + "\r\n\tException: " + e.Message + "\r\n}");
+                    return false;
+                }
+            }
+
             public bool OnOff(IMySensorBlock sensor)
             {
                 sensor.SetValue("OnOff", !sensor.GetValue<bool>("OnOff"));
@@ -1126,6 +1193,95 @@
                     s.ApplyAction("Detect Asteroids_Off");
                     return true;
                 } catch (Exception e) { return false; }
+            }
+        }
+
+        public class PowerModule
+        {
+            List<IMyReactor> reactors = new List<IMyReactor>();
+            List<IMySolarPanel> solar = new List<IMySolarPanel>();
+            List<IMyBatteryBlock> bat = new List<IMyBatteryBlock>();
+
+            public List<string> PMeventLog = new List<string>();
+
+            enum DisplayOptions
+            {
+                Numierical,
+                Graphical
+            }
+
+            Dictionary<string, double> powerConversion = new Dictionary<string, double>() { { "W", 1 }, { "kW", 1000 }, { "MW", 1000000 } };
+
+            public static PowerModule CreateModule(List<IMyTerminalBlock> r = null, List<IMyTerminalBlock> s = null, List<IMyTerminalBlock> b = null)
+            {
+                if (r != null && s != null && b != null) { return new PowerModule(r, s, b); } else { throw new MissingBlockException("No Power Sources Found"); }
+            }
+
+            public PowerModule(List<IMyTerminalBlock> r = null, List<IMyTerminalBlock> s = null, List<IMyTerminalBlock> b = null)
+            {
+                foreach (IMyTerminalBlock re in r)
+                {
+                    reactors.Add((IMyReactor)re);
+                    PMeventLog.Add(re.CustomName + " Added to Reactors");
+                }
+
+                foreach (IMyTerminalBlock so in s)
+                {
+                    solar.Add((IMySolarPanel)so);
+                    PMeventLog.Add(so.CustomName + " Added to Solar");
+                }
+                foreach (IMyTerminalBlock ba in b)
+                {
+                    bat.Add((IMyBatteryBlock)ba);
+                    PMeventLog.Add(ba.CustomName + " Added to Batteries");
+                }
+            }
+
+            public string getPowerOutput(int display)
+            {
+
+                double max = 0;
+                double current = 0;
+                double converter;
+
+                if (reactors != null)
+                {
+                    for (int i = 0; i < reactors.Count; i++)
+                    {
+                        string[] dInfo = reactors[i].DetailedInfo.Split('\n');
+                        double j = 0;
+                        double cMax = double.TryParse(dInfo[1].Split(' ')[2],out j) ? j : 0;
+                        converter = powerConversion.TryGetValue(dInfo[1].Split(' ')[3], out j) ? j : 0D;
+                        PMeventLog.Add("Debug: cMax = " + dInfo[1].Split(' ')[2]);
+                        cMax = cMax * converter;
+                        PMeventLog.Add("Debug: Power Conversion (" + dInfo[1].Split(' ')[3] + ") = " + (powerConversion.TryGetValue(dInfo[1].Split(' ')[3], out j) ? j : 0));
+                        PMeventLog.Add("Debug: " + (cMax/converter) + " * " + converter + " = " + cMax);
+                        max = max + cMax;
+                        double k = 0;
+                        double cCurrent = double.TryParse(dInfo[2].Split(' ')[2], out k) ? k : 0;
+                        converter = powerConversion.TryGetValue(dInfo[2].Split(' ')[3], out k) ? k : 0;
+                        cCurrent = cCurrent * converter;
+                        current = current + cCurrent;
+                        PMeventLog.Add(reactors[i].CustomName + ":\r\n\tMax: " + j + " W\r\n\tCurrent: " + k + " W");
+                    }
+                }
+
+                DisplayOptions disp = (DisplayOptions)display;
+                switch (disp)
+                {   
+                    case DisplayOptions.Numierical:
+                        
+                        break;
+                    case DisplayOptions.Graphical:
+
+                        break;
+
+                    default:
+
+                        break;
+
+                }
+                return "";
             }
         }
 

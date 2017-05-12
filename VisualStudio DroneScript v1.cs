@@ -1402,13 +1402,11 @@
                     else
                     {
 
-                        double preFuel = fuel;
-                        foreach (string str in reactorFuel["FuelLevel"])
-                        {
-                            preFuel += double.TryParse(str, out double fuelLevel) ? fuelLevel : 0D;
-                        }
+                        double preFuel = double.TryParse(reactorFuel["FuelLevel"][1], out double fuelLevel) ? fuelLevel : 0D;
+                        double rate = preFuel - fuel;
 
-                        double rate = preFuel / (double)reactorFuel["FuelLevel"].Count;
+                        DateTime time1 = DateTime.TryParse(reactorFuel["Timestamp"][1], out DateTime t1) ? t1 : DateTime.Now;
+                        TimeSpan span = time1.Subtract(now);
 
                         reactorFuel["Timestamp"].Insert(0, now.ToString());
                         reactorFuel["FuelLevel"].Insert(0, fuel.ToString());

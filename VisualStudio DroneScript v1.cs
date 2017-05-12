@@ -1201,7 +1201,9 @@
             List<IMyReactor> reactors = new List<IMyReactor>();
             Dictionary<string, double> reactorStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D}, { "FuelTime", 0D } };
             List<IMySolarPanel> solar = new List<IMySolarPanel>();
+            Dictionary<string, double> solarStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D}, { "FuelTime", 0D } };
             List<IMyBatteryBlock> bat = new List<IMyBatteryBlock>();
+            Dictionary<string, double> batteryStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "StoredPower", 0D}, { "FuelTime", 0D } };
 
             public List<string> PMeventLog = new List<string>();
 
@@ -1322,7 +1324,6 @@
                         6) Stored power: 3.00 MWh
                         7) Fully depleted in: 5 hours
                      */
-
                     for (int i = 0; i < bat.Count; i++)
                     {
                         string[] dInfo = bat[i].DetailedInfo.Split('\n');
@@ -1333,16 +1334,31 @@
                         converter = dInfo[1].Split(' ')[3];
                         PMeventLog.Add("Debug: cMax = " + dInfo[1].Split(' ')[2]);
                         cMax = convertPower(cMax, converter, "W");
-
-                        max = max + cMax;
+                        batteryStats["MaxPower"] += cMax;
+                        max += cMax;
 
                         // Current Power
                         double k = 0;
                         double cCurrent = double.TryParse(dInfo[5].Split(' ')[2], out k) ? k : 0;
                         converter = dInfo[5].Split(' ')[3];
                         cCurrent = convertPower(cCurrent, converter, "W");
-                        current = current + cCurrent;
+                        batteryStats["CurrentPower"] += cCurrent;
+                        current += cCurrent;
                         PMeventLog.Add(bat[i].CustomName + ": {\r\n\tMax: " + cMax + " W\r\n\tCurrent: " + cCurrent + " W\n}");
+                    
+                        // Stored Power
+                        double m = 0;
+                        double stored = double.TryParse(dInfo[6].Split(' ')[2], out m) ? m : 0D;
+                        converter = dInfo[6].Split(' ')[3];
+                        switch(converter)
+                        {
+                            case "Wh": batteryStats["StoredPower"] = stored; break;
+                            case "kWh": batteryStats["StoredPower"] = convertPower(stored,"kW","W"); break;
+                            case "MWh": batteryStats["StoredPower"] = convertPower(stored,"MW", "W"); break;
+                        }
+
+                        // Fuel Time
+                        batteryStats["FuelTime"] = batteryStats["StoredPower"] / batteryStats["CurrentPower"];
                     }
                 }
 
@@ -1372,6 +1388,15 @@
             public bool manageBatteries()
             {
                 return true;
+            }
+
+            public TimeSpan getFuelTime(double time)
+            {
+                double hours = Math.Truncate(time);
+                double minutes = ( time - hours ) * 60;
+                double seconds = (minutes - Math.Truncate(minutes)) * 60;
+
+                return new TimeSpan((int)hours,(int)minutes,(int)seconds;
             }
         }
 

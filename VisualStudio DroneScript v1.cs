@@ -307,6 +307,7 @@
                     {
                         PM.getPowerOutput();
                         writeToLine(lcdMain, str, true);
+                        writeToLine(lcdMain, ("Remaining Time in Battery: " + PM.getStats(PM.batteryStats,"FuelTime").ToString()), true);
                     }
                 }
             }
@@ -1199,11 +1200,13 @@
         public class PowerModule
         {
             List<IMyReactor> reactors = new List<IMyReactor>();
-            Dictionary<string, double> reactorStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D}, { "FuelTime", 0D } };
+            public Dictionary<string, double> reactorStats = new Dictionary<string,double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D }, { "FuelTime", 0D } };
+            Dictionary<string, List<string>> reactorFuel = new Dictionary<string, List<string>>() { { "Timestamp", new List<string>() }, { "FuelLevel", new List<string>()}, { "DepletionRate", new List<string>()} };
             List<IMySolarPanel> solar = new List<IMySolarPanel>();
-            Dictionary<string, double> solarStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D}, { "FuelTime", 0D } };
+            public Dictionary<string, double> solarStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D }, { "FuelTime", 0D } };
             List<IMyBatteryBlock> bat = new List<IMyBatteryBlock>();
-            Dictionary<string, double> batteryStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "StoredPower", 0D}, { "FuelTime", 0D } };
+            bool batteryRecharge = false;
+            public Dictionary<string, double> batteryStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "StoredPower", 0D }, { "FuelTime", 0D } };
 
             public List<string> PMeventLog = new List<string>();
 
@@ -1385,9 +1388,57 @@
                 return 0D;
             }
 
+            public bool addReactorFuelReading(double fuel)
+            {
+                try
+                {
+                    DateTime now = DateTime.Now;
+                    if (reactorFuel["Timestamp"].Count > 1)
+                    {
+                        reactorFuel["Timestamp"].Insert(0, now.ToString());
+                        reactorFuel["FuelLevel"].Insert(0, fuel.ToString());
+                        reactorFuel["DepletionRate"].Insert(0, "0");
+                    }
+                    else
+                    {
+
+                        double preFuel = fuel;
+                        foreach (string str in reactorFuel["FuelLevel"])
+                        {
+                            preFuel += double.TryParse(str, out double fuelLevel) ? fuelLevel : 0D;
+                        }
+
+                        double rate = preFuel / (double)reactorFuel["FuelLevel"].Count;
+
+                        reactorFuel["Timestamp"].Insert(0, now.ToString());
+                        reactorFuel["FuelLevel"].Insert(0, fuel.ToString());
+                        reactorFuel["DepletionRate"].Insert(0, rate.ToString());
+                    }
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    PMeventLog.Add(e.Message);
+                    return false;
+                }
+            }
+
             public bool manageBatteries()
             {
                 return true;
+            }
+
+            public double getStats(Dictionary<string, double> d, string key)
+            {
+                if (d.ContainsKey(key))
+                {
+                    return d[key];
+                }
+                else
+                {
+                    return 0D;
+                }
             }
 
             public TimeSpan getFuelTime(double time)
@@ -1396,7 +1447,7 @@
                 double minutes = ( time - hours ) * 60;
                 double seconds = (minutes - Math.Truncate(minutes)) * 60;
 
-                return new TimeSpan((int)hours,(int)minutes,(int)seconds;
+                return new TimeSpan((int)hours,(int)minutes,(int)seconds);
             }
         }
 

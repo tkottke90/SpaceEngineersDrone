@@ -305,7 +305,7 @@
                 {
                     foreach (string str in PM.PMeventLog)
                     {
-                        PM.getPowerOutput(1);
+                        PM.getPowerOutput();
                         writeToLine(lcdMain, str, true);
                     }
                 }
@@ -1199,16 +1199,11 @@
         public class PowerModule
         {
             List<IMyReactor> reactors = new List<IMyReactor>();
+            Dictionary<string, double> reactorStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D}, { "FuelTime", 0D } };
             List<IMySolarPanel> solar = new List<IMySolarPanel>();
             List<IMyBatteryBlock> bat = new List<IMyBatteryBlock>();
 
             public List<string> PMeventLog = new List<string>();
-
-            enum DisplayOptions
-            {
-                Numierical,
-                Graphical
-            }
 
             Dictionary<string, double> powerConversion = new Dictionary<string, double>() { { "W", 1 }, { "kW", 1000 }, { "MW", 1000000 } };
 
@@ -1237,51 +1232,146 @@
                 }
             }
 
-            public string getPowerOutput(int display)
+            public string getPowerOutput()
             {
 
                 double max = 0;
                 double current = 0;
-                double converter;
+                string converter;
 
                 if (reactors != null)
                 {
                     for (int i = 0; i < reactors.Count; i++)
                     {
+
                         string[] dInfo = reactors[i].DetailedInfo.Split('\n');
+
+                        // Max Power
                         double j = 0;
-                        double cMax = double.TryParse(dInfo[1].Split(' ')[2],out j) ? j : 0;
-                        converter = powerConversion.TryGetValue(dInfo[1].Split(' ')[3], out j) ? j : 0D;
+                        double cMax = double.TryParse(dInfo[1].Split(' ')[2], out j) ? j : 0;
+                        converter = dInfo[1].Split(' ')[3];
                         PMeventLog.Add("Debug: cMax = " + dInfo[1].Split(' ')[2]);
-                        cMax = cMax * converter;
-                        PMeventLog.Add("Debug: Power Conversion (" + dInfo[1].Split(' ')[3] + ") = " + (powerConversion.TryGetValue(dInfo[1].Split(' ')[3], out j) ? j : 0));
-                        PMeventLog.Add("Debug: " + (cMax/converter) + " * " + converter + " = " + cMax);
+                        cMax = convertPower(cMax, converter, "W");
+                        reactorStats["MaxPower"] += cMax;
                         max = max + cMax;
+
+                        // Current Power
                         double k = 0;
                         double cCurrent = double.TryParse(dInfo[2].Split(' ')[2], out k) ? k : 0;
-                        converter = powerConversion.TryGetValue(dInfo[2].Split(' ')[3], out k) ? k : 0;
-                        cCurrent = cCurrent * converter;
+                        converter = dInfo[2].Split(' ')[3];
+                        cCurrent = convertPower(cCurrent, converter, "W");
+                        reactorStats["CurrentPower"] += cCurrent;
                         current = current + cCurrent;
-                        PMeventLog.Add(reactors[i].CustomName + ":\r\n\tMax: " + j + " W\r\n\tCurrent: " + k + " W");
+                        PMeventLog.Add(reactors[i].CustomName + ": {\r\n\tMax: " + cMax + " W\r\n\tCurrent: " + cCurrent + " W\n}");
+
+                        // Fuel Level
+                        IMyInventory inv = reactors[i].GetInventory(0);
+                        var U = inv.GetItems();
+                        for (int m = 0; m < U.Count; j++)
+                        {
+                            if (U[m].Content.TypeId.ToString().EndsWith("Ingot") && U[m].Content.SubtypeId.ToString() == "Uranium")
+                            {
+                                reactorStats["FuelLevel"] += (double)U[m].Amount;
+                            }
+                        }
+
+                        PMeventLog.Add(reactors[i].CustomName + " Fuel Level: " + reactorStats["FuelLevel"]);
                     }
                 }
 
-                DisplayOptions disp = (DisplayOptions)display;
-                switch (disp)
-                {   
-                    case DisplayOptions.Numierical:
-                        
-                        break;
-                    case DisplayOptions.Graphical:
+                if (solar != null)
+                {
 
-                        break;
+                    /* Solar DetailedInfo:
+                        0) Type: Solar Panel
+                        1) Max Output: 18.32 kW
+                        2) Current Output: 0 W
+                     */
+                    for (int i = 0; i < solar.Count; i++)
+                    {
+                        string[] dInfo = solar[i].DetailedInfo.Split('\n');
 
-                    default:
+                        // Max Power
+                        double j = 0;
+                        double cMax = double.TryParse(dInfo[1].Split(' ')[2], out j) ? j : 0;
+                        converter = dInfo[1].Split(' ')[3];
+                        PMeventLog.Add("Debug: cMax = " + dInfo[1].Split(' ')[2]);
+                        cMax = convertPower(cMax, converter, "W");
 
-                        break;
+                        max = max + cMax;
 
+                        // Current Power
+                        double k = 0;
+                        double cCurrent = double.TryParse(dInfo[2].Split(' ')[2], out k) ? k : 0;
+                        converter = dInfo[2].Split(' ')[3];
+                        cCurrent = convertPower(cCurrent, converter, "W");
+                        current = current + cCurrent;
+                        PMeventLog.Add(solar[i].CustomName + ": {\r\n\tMax: " + cMax + " W\r\n\tCurrent: " + cCurrent + " W\n}");
+                    }
                 }
+
+                if (bat != null)
+                {
+                    /* Battery DetailedInfo
+                        0) Type: Battery
+                        1) Max Output: 12.00 MW
+                        2) Max Required Input: 12.00 MW
+                        3) Max Stored Power: 3.00 MWh
+                        4) Current Input: 0 W
+                        5) Current Output: 581.45 kW
+                        6) Stored power: 3.00 MWh
+                        7) Fully depleted in: 5 hours
+                     */
+
+                    for (int i = 0; i < bat.Count; i++)
+                    {
+                        string[] dInfo = bat[i].DetailedInfo.Split('\n');
+
+                        // Max Power
+                        double j = 0;
+                        double cMax = double.TryParse(dInfo[1].Split(' ')[2], out j) ? j : 0;
+                        converter = dInfo[1].Split(' ')[3];
+                        PMeventLog.Add("Debug: cMax = " + dInfo[1].Split(' ')[2]);
+                        cMax = convertPower(cMax, converter, "W");
+
+                        max = max + cMax;
+
+                        // Current Power
+                        double k = 0;
+                        double cCurrent = double.TryParse(dInfo[5].Split(' ')[2], out k) ? k : 0;
+                        converter = dInfo[5].Split(' ')[3];
+                        cCurrent = convertPower(cCurrent, converter, "W");
+                        current = current + cCurrent;
+                        PMeventLog.Add(bat[i].CustomName + ": {\r\n\tMax: " + cMax + " W\r\n\tCurrent: " + cCurrent + " W\n}");
+                    }
+                }
+
                 return "";
+            }
+
+            public double convertPower(double value, string powerFrom, string powerTo)
+            {
+                switch (powerFrom)
+                {
+                    case "W":
+                        if (powerTo == "kW") { return value / 1000; }
+                        else if (powerTo == "MW") { return value / 100000; }
+                        break;
+                    case "kW":
+                        if (powerTo == "W") { return value * 1000; }
+                        else if (powerTo == "MW") { return value / 1000; }
+                        break;
+                    case "MW":
+                        if (powerTo == "W") { return value * 1000000; }
+                        else if (powerTo == "kw") { return value * 1000;  }
+                        break;
+                }
+                return 0D;
+            }
+
+            public bool manageBatteries()
+            {
+                return true;
             }
         }
 

@@ -1,21 +1,21 @@
 ﻿#region pre-script
-    using System;
-    using System.Text;
-    using System.Collections;
-    using System.Collections.Generic;
-    using VRageMath;
-    using VRage.Game;
-    using Sandbox.ModAPI.Interfaces;
-    using Sandbox.ModAPI.Ingame;
-    using Sandbox.Game.EntityComponents;
-    using VRage.Game.Components;
-    using VRage.Collections;
-    using VRage.Game.ObjectBuilders.Definitions;
-    using VRage.Game.ModAPI.Ingame;
-    using SpaceEngineers.Game.ModAPI.Ingame;
+using System;
+using System.Text;
+using System.Collections;
+using System.Collections.Generic;
+using VRageMath;
+using VRage.Game;
+using Sandbox.ModAPI.Interfaces;
+using Sandbox.ModAPI.Ingame;
+using Sandbox.Game.EntityComponents;
+using VRage.Game.Components;
+using VRage.Collections;
+using VRage.Game.ObjectBuilders.Definitions;
+using VRage.Game.ModAPI.Ingame;
+using SpaceEngineers.Game.ModAPI.Ingame;
 
-    namespace IngameScript
-    {
+namespace IngameScript
+{
     public class Program : MyGridProgram
     {
         #endregion
@@ -69,7 +69,7 @@
 
         public void Main(string argument)
         {
-            
+
             AIModule AI = new AIModule(); initProgress++;
             bool rem = getRemote();
             getPreferences(AI);
@@ -159,7 +159,8 @@
 
                 Me.CustomData = updatePrefs;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 if (DEBUG) { exceptionHandler(e, 128); }
             }
         }
@@ -277,7 +278,7 @@
             try
             {
                 SM = SensorModule.CreateModule(true, l4);
-                if(Me.CustomData.Split('\n')[8].Split('|')[1] == "true") { SM.SensorModulePower(); }
+                if (Me.CustomData.Split('\n')[8].Split('|')[1] == "true") { SM.SensorModulePower(); }
                 if (DEBUG && SM.SMeventLog.Count > 0) { foreach (string str in SM.SMeventLog) { writeToLine(lcdMain, str, true); } writeToLine(lcdMain, ("SM Power Status: " + SM.asteriod.GetValue<bool>("OnOff")), true); }
                 string[] eStr = new string[3];
                 eStr[0] = SM.asteriod != null ? SM.asteriod.CustomName : "null";
@@ -287,7 +288,7 @@
             }
             catch (MissingBlockException e)
             {
-                exceptionHandler(e,279);
+                exceptionHandler(e, 279);
                 SM.resetSensors(l4);
                 return false;
             }
@@ -300,14 +301,21 @@
 
             try
             {
-                PM = new PowerModule(l5, l6, l7);
+                if (PM == null)
+                {
+                    PM = new PowerModule(l5, l6, l7);
+                }
+                else
+                {
+                    PM.UpdateModule(l5, l6, l7);
+                }
                 if (DEBUG)
                 {
                     foreach (string str in PM.PMeventLog)
                     {
                         PM.getPowerOutput();
                         writeToLine(lcdMain, str, true);
-                        writeToLine(lcdMain, ("Remaining Time in Battery: " + PM.getStats(PM.batteryStats,"FuelTime").ToString()), true);
+                        writeToLine(lcdMain, ("Remaining Time in Battery: " + PM.getStats(PM.batteryStats, "FuelTime").ToString()), true);
                     }
                 }
             }
@@ -465,7 +473,7 @@
             try
             {
                 string smPower = prefs[8].Split('|')[1];
-                
+
 
             }
             catch (Exception e)
@@ -656,7 +664,8 @@
                 }
                 catch (Exception e)
                 {
-                    if (LCD_DEBUG) {
+                    if (LCD_DEBUG)
+                    {
                         Echo("510 - " + e.ToString());
                         Echo("511 - strPrime[i].Length: " + strPrime[i].Length);
                         Echo("512 - spacerCount: " + spacerCount);
@@ -746,7 +755,8 @@
 
 
                 valid = true;
-                try {
+                try
+                {
                     foreach (GPSlocation g in knownCoords)
                     {
                         if (!nGPS.checkNear(g.gps, a.coordSpacing))
@@ -757,7 +767,8 @@
                         }
                     }
                 }
-                catch (Exception e) {
+                catch (Exception e)
+                {
                     writeToLine(lcdMain, ("755 - " + e.Message + "\n" + e.StackTrace), true);
                     writeToLine(lcdMain, ("756 - selector:" + selector), true);
                     if (nGPS != null) { writeToLine(lcdMain, ("nGPS : " + nGPS.ToString()), true); } else { writeToLine(lcdMain, ("nGPS = null"), true); }
@@ -1036,7 +1047,7 @@
                                 SMeventLog.Add("sensorNames.Exists(s => t.CustomName.Equals(s)) = " + sensorNames.Exists(s => t.CustomName.Equals(s)));
                                 if (!sensorNames.Exists(s => t.CustomName.Equals(s)))
                                 {
-                                    
+
                                     t.CustomName = sensorNames[i];
                                     switch (i)
                                     {
@@ -1100,7 +1111,7 @@
             {
                 try
                 {
-                    for(int counter = 0; counter < sensor.Count; counter++)
+                    for (int counter = 0; counter < sensor.Count; counter++)
                     {
                         sensor[counter].CustomName = "Sensor " + counter;
                     }
@@ -1118,7 +1129,8 @@
 
             public bool maxRange(IMySensorBlock sensor)
             {
-                try {
+                try
+                {
                     sensor.BackExtend = sensor.MaxRange;
                     sensor.BottomExtend = sensor.MaxRange;
                     sensor.FrontExtend = sensor.MaxRange;
@@ -1126,7 +1138,8 @@
                     sensor.RightExtend = sensor.MaxRange;
                     sensor.TopExtend = sensor.MaxRange;
                     return true;
-                } catch (Exception e) { return false; }
+                }
+                catch (Exception e) { return false; }
             }
 
             public bool SensorModulePower()
@@ -1154,7 +1167,8 @@
 
             public bool setDetectAsteriod(IMySensorBlock s)
             {
-                try {
+                try
+                {
                     s.CustomName = "Sensor [asteroid]";
                     s.ApplyAction("Detect Players_Off");
                     s.ApplyAction("Detect Floating Objects_Off");
@@ -1163,12 +1177,14 @@
                     s.ApplyAction("Detect Stations_Off");
                     s.ApplyAction("Detect Asteroids_On");
                     return true;
-                } catch (Exception e) { return false; }
+                }
+                catch (Exception e) { return false; }
             }
 
             public bool setDetectShip(IMySensorBlock s)
             {
-                try {
+                try
+                {
                     s.CustomName = "Sensor [ship]";
                     s.SetValue("OnOff", false);
                     s.ApplyAction("Detect Players_Off");
@@ -1178,12 +1194,14 @@
                     s.ApplyAction("Detect Stations_Off");
                     s.ApplyAction("Detect Asteroids_Off");
                     return true;
-                } catch (Exception e) { return false; }
+                }
+                catch (Exception e) { return false; }
             }
 
             public bool setDetectPlayer(IMySensorBlock s)
             {
-                try {
+                try
+                {
                     s.CustomName = "Sensor [player]";
                     s.SetValue("OnOff", false);
                     s.ApplyAction("Detect Players_On");
@@ -1193,26 +1211,50 @@
                     s.ApplyAction("Detect Stations_Off");
                     s.ApplyAction("Detect Asteroids_Off");
                     return true;
-                } catch (Exception e) { return false; }
+                }
+                catch (Exception e) { return false; }
             }
         }
 
         public class PowerModule
         {
+            // Reactors
             List<IMyReactor> reactors = new List<IMyReactor>();
-            public Dictionary<string, double> reactorStats = new Dictionary<string,double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D }, { "FuelTime", 0D } };
-            Dictionary<string, List<string>> reactorFuel = new Dictionary<string, List<string>>() { { "Timestamp", new List<string>() }, { "FuelLevel", new List<string>()}, { "DepletionRate", new List<string>()} };
+            public Dictionary<string, double> reactorStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D }, { "FuelTime", 0D } };
+            Dictionary<string, List<string>> reactorFuel = new Dictionary<string, List<string>>() { { "Timestamp", new List<string>() }, { "FuelLevel", new List<string>() }, { "DepletionRate", new List<string>() } };
+
+            // Solar Panels
             List<IMySolarPanel> solar = new List<IMySolarPanel>();
             public Dictionary<string, double> solarStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D }, { "FuelTime", 0D } };
+
+            // Batery
             List<IMyBatteryBlock> bat = new List<IMyBatteryBlock>();
-            bool batteryRecharge = false;
             public Dictionary<string, double> batteryStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "StoredPower", 0D }, { "FuelTime", 0D } };
+
+            // Grid Load
+            double gridLoad = 0D; // Stored in Watts
 
             public List<string> PMeventLog = new List<string>();
 
             public static PowerModule CreateModule(List<IMyTerminalBlock> r = null, List<IMyTerminalBlock> s = null, List<IMyTerminalBlock> b = null)
             {
                 if (r != null && s != null && b != null) { return new PowerModule(r, s, b); } else { throw new MissingBlockException("No Power Sources Found"); }
+            }
+
+            public bool UpdateModule(List<IMyTerminalBlock> r = null, List<IMyTerminalBlock> s = null, List<IMyTerminalBlock> b = null)
+            {
+                try
+                {
+                    foreach (IMyTerminalBlock re in r) { reactors.Add((IMyReactor)r); }
+                    foreach (IMyTerminalBlock so in s) { solar.Add((IMySolarPanel)s); }
+                    foreach (IMyTerminalBlock ba in b) { bat.Add((IMyBatteryBlock)b); }
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    PMeventLog.Add("Update Module Error: " + e.Message);
+                    return false;
+                }
             }
 
             public PowerModule(List<IMyTerminalBlock> r = null, List<IMyTerminalBlock> s = null, List<IMyTerminalBlock> b = null)
@@ -1233,6 +1275,8 @@
                     bat.Add((IMyBatteryBlock)ba);
                     PMeventLog.Add(ba.CustomName + " Added to Batteries");
                 }
+
+                getPowerOutput();
             }
 
             public string getPowerOutput()
@@ -1278,7 +1322,7 @@
                             }
                         }
 
-                        addReactorFuelReading();
+                        addReactorFuelReading(reactorStats["FuelLevel"]);
                         PMeventLog.Add(reactors[i].CustomName + " Fuel Level: " + reactorStats["FuelLevel"]);
                     }
                 }
@@ -1347,16 +1391,16 @@
                         batteryStats["CurrentPower"] += cCurrent;
                         current += cCurrent;
                         PMeventLog.Add(bat[i].CustomName + ": {\r\n\tMax: " + cMax + " W\r\n\tCurrent: " + cCurrent + " W\n}");
-                    
+
                         // Stored Power
                         double m = 0;
                         double stored = double.TryParse(dInfo[6].Split(' ')[2], out m) ? m : 0D;
                         converter = dInfo[6].Split(' ')[3];
-                        switch(converter)
+                        switch (converter)
                         {
                             case "Wh": batteryStats["StoredPower"] = stored; break;
-                            case "kWh": batteryStats["StoredPower"] = convertPower(stored,"kW","W"); break;
-                            case "MWh": batteryStats["StoredPower"] = convertPower(stored,"MW", "W"); break;
+                            case "kWh": batteryStats["StoredPower"] = convertPower(stored, "kW", "W"); break;
+                            case "MWh": batteryStats["StoredPower"] = convertPower(stored, "MW", "W"); break;
                         }
 
                         // Fuel Time
@@ -1364,7 +1408,7 @@
                     }
                 }
 
-                return "";
+                return String.Format("Current Power Usage: {0} kW / {1} kw", convertPower(current, "W", "kW"), convertPower(max, "W", "kW"));
             }
 
             public double convertPower(double value, string powerFrom, string powerTo)
@@ -1381,7 +1425,7 @@
                         break;
                     case "MW":
                         if (powerTo == "W") { return value * 1000000; }
-                        else if (powerTo == "kw") { return value * 1000;  }
+                        else if (powerTo == "kw") { return value * 1000; }
                         break;
                 }
                 return 0D;
@@ -1408,7 +1452,7 @@
                         TimeSpan span = now - time1;
 
                         double fuelUsage = rate / span.TotalSeconds;
-                        
+
 
                         reactorFuel["Timestamp"].Insert(0, now.ToString());
                         reactorFuel["FuelLevel"].Insert(0, fuel.ToString());
@@ -1426,14 +1470,25 @@
 
             public bool manageBatteries()
             {
-                return true;
-            }
+                try
+                {
+                    double mReacSolar = 0D;
+                    double cReacSolar = 0D;
 
-            public double getGridLoad(List<IMyTerminalBlock> grid)
-            {
-                
+                    if (reactors != null) { mReacSolar += reactorStats["MaxPower"]; cReacSolar += reactorStats["CurrentPower"]; }
+                    if (solar != null) { mReacSolar += solarStats["MaxPower"]; cReacSolar += solarStats["CurentPower"]; }
 
-                return 0D;
+                    bool batteryRecharge = (cReacSolar / mReacSolar) < 0.8D;
+
+                    foreach (IMyBatteryBlock b in bat) { b.SetValue<bool>("Recharge", batteryRecharge); }
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    PMeventLog.Add("manageBatteries Error: " + e.Message);
+                    return false;
+                }
             }
 
             public double getStats(Dictionary<string, double> d, string key)
@@ -1451,10 +1506,10 @@
             public TimeSpan getFuelTime(double time)
             {
                 double hours = Math.Truncate(time);
-                double minutes = ( time - hours ) * 60;
+                double minutes = (time - hours) * 60;
                 double seconds = (minutes - Math.Truncate(minutes)) * 60;
 
-                return new TimeSpan((int)hours,(int)minutes,(int)seconds);
+                return new TimeSpan((int)hours, (int)minutes, (int)seconds);
             }
         }
 
@@ -1464,9 +1519,9 @@
             public MissingBlockException(string message) : base(message) { }
             public MissingBlockException(string message, System.Exception inner) : base(message, inner) { }
         }
-        
-    #endregion
-    #region post-script
+
+        #endregion
+        #region post-script
     }
 }
 #endregion

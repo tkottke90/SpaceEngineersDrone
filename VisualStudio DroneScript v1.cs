@@ -69,7 +69,7 @@
 
         public void Main(string argument)
         {
-
+            
             AIModule AI = new AIModule(); initProgress++;
             bool rem = getRemote();
             getPreferences(AI);
@@ -1210,8 +1210,6 @@
 
             public List<string> PMeventLog = new List<string>();
 
-            Dictionary<string, double> powerConversion = new Dictionary<string, double>() { { "W", 1 }, { "kW", 1000 }, { "MW", 1000000 } };
-
             public static PowerModule CreateModule(List<IMyTerminalBlock> r = null, List<IMyTerminalBlock> s = null, List<IMyTerminalBlock> b = null)
             {
                 if (r != null && s != null && b != null) { return new PowerModule(r, s, b); } else { throw new MissingBlockException("No Power Sources Found"); }
@@ -1280,6 +1278,7 @@
                             }
                         }
 
+                        addReactorFuelReading();
                         PMeventLog.Add(reactors[i].CustomName + " Fuel Level: " + reactorStats["FuelLevel"]);
                     }
                 }
@@ -1393,7 +1392,7 @@
                 try
                 {
                     DateTime now = DateTime.Now;
-                    if (reactorFuel["Timestamp"].Count > 1)
+                    if (reactorFuel["Timestamp"].Count > 2)
                     {
                         reactorFuel["Timestamp"].Insert(0, now.ToString());
                         reactorFuel["FuelLevel"].Insert(0, fuel.ToString());
@@ -1406,11 +1405,14 @@
                         double rate = preFuel - fuel;
 
                         DateTime time1 = DateTime.TryParse(reactorFuel["Timestamp"][1], out DateTime t1) ? t1 : DateTime.Now;
-                        TimeSpan span = time1.Subtract(now);
+                        TimeSpan span = now - time1;
+
+                        double fuelUsage = rate / span.TotalSeconds;
+                        
 
                         reactorFuel["Timestamp"].Insert(0, now.ToString());
                         reactorFuel["FuelLevel"].Insert(0, fuel.ToString());
-                        reactorFuel["DepletionRate"].Insert(0, rate.ToString());
+                        reactorFuel["DepletionRate"].Insert(0, fuelUsage.ToString());
                     }
 
                     return true;
@@ -1425,6 +1427,13 @@
             public bool manageBatteries()
             {
                 return true;
+            }
+
+            public double getGridLoad(List<IMyTerminalBlock> grid)
+            {
+                
+
+                return 0D;
             }
 
             public double getStats(Dictionary<string, double> d, string key)

@@ -311,9 +311,9 @@ namespace IngameScript
                 }
                 if (DEBUG)
                 {
+                    PM.getPowerData();
                     foreach (string str in PM.PMeventLog)
                     {
-                        PM.getPowerOutput();
                         writeToLine(lcdMain, str, true);
                         writeToLine(lcdMain, ("Remaining Time in Battery: " + PM.getStats(PM.batteryStats, "FuelTime").ToString()), true);
                     }
@@ -577,6 +577,14 @@ namespace IngameScript
 
         public string drawLCDFuel(IMyTextPanel lcd)
         {
+            string output = "";
+
+            bool[] powerTypes = PM.getPowerTypes();
+
+            if (powerTypes[0])
+            {
+                output += String.Format("Reactor Fuel Available: {0}\r\nEstimated Time TIll Empty: {1}", PM.reactorFuel["FuelLevel"][0], PM.reactorFuel["Depletion Rate"][0]);
+            }
 
             return "Fuel";
         }
@@ -1221,18 +1229,17 @@ namespace IngameScript
             // Reactors
             List<IMyReactor> reactors = new List<IMyReactor>();
             public Dictionary<string, double> reactorStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D }, { "FuelTime", 0D } };
-            Dictionary<string, List<string>> reactorFuel = new Dictionary<string, List<string>>() { { "Timestamp", new List<string>() }, { "FuelLevel", new List<string>() }, { "DepletionRate", new List<string>() } };
+            public Dictionary<string, List<string>> reactorFuel = new Dictionary<string, List<string>>() { { "Timestamp", new List<string>() }, { "FuelLevel", new List<string>() }, { "DepletionRate", new List<string>() } };
+
 
             // Solar Panels
             List<IMySolarPanel> solar = new List<IMySolarPanel>();
             public Dictionary<string, double> solarStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "FuelLevel", 0D }, { "FuelTime", 0D } };
+            public Dictionary<string, List<string>> solarRecord = new Dictionary<string, List<string>>() { { "Timestamp", new List<string>() }, { "SolarInput", new List<string>() }, { "SolarRate", new List<string>() } };
 
             // Batery
             List<IMyBatteryBlock> bat = new List<IMyBatteryBlock>();
             public Dictionary<string, double> batteryStats = new Dictionary<string, double>() { { "MaxPower", 0D }, { "CurrentPower", 0D }, { "StoredPower", 0D }, { "FuelTime", 0D } };
-
-            // Grid Load
-            double gridLoad = 0D; // Stored in Watts
 
             public List<string> PMeventLog = new List<string>();
 
@@ -1276,10 +1283,15 @@ namespace IngameScript
                     PMeventLog.Add(ba.CustomName + " Added to Batteries");
                 }
 
-                getPowerOutput();
+                getPowerData();
             }
 
-            public string getPowerOutput()
+            public bool[] getPowerTypes()
+            {
+                return new bool[] { reactors != null, solar != null, bat != null };
+            }
+
+            public string getPowerData()
             {
 
                 double max = 0;
@@ -1355,6 +1367,9 @@ namespace IngameScript
                         cCurrent = convertPower(cCurrent, converter, "W");
                         current = current + cCurrent;
                         PMeventLog.Add(solar[i].CustomName + ": {\r\n\tMax: " + cMax + " W\r\n\tCurrent: " + cCurrent + " W\n}");
+
+                        // 
+                        addSolarPowerReading();
                     }
                 }
 
@@ -1411,6 +1426,71 @@ namespace IngameScript
                 return String.Format("Current Power Usage: {0} kW / {1} kw", convertPower(current, "W", "kW"), convertPower(max, "W", "kW"));
             }
 
+            public string getPowerOutput(int screenWidth, int displaySelector, bool reactor = false, bool solar = false, bool battery = false)
+            {
+                string output = ""; char[] drawChar = { '|', '-' };
+                string bar = "";
+                int screenReserve = screenWidth * (1 / 3);
+                int screenAvailable = (screenWidth * (2 / 3)) - 2;
+
+                if (reactor)
+                {
+                    double useage = reactorStats["CurrentPower"] / reactorStats["MaxPower"];
+                    int drawBar = (int)(screenAvailable * useage);
+
+                    for (int i = 0; i < screenAvailable; i++)
+                    {
+                        if (i < drawBar) { bar += drawChar[0]; } else { bar += drawChar[1]; }
+                    }
+
+                    switch (displaySelector)
+                    {
+                        case 0: output += String.Format("Reactors: \r\n[{0}] {1} kW / {2} kW\r\n", bar, reactorStats["CurrentPower"], reactorStats["MaxPower"]); break;
+                        case 1:
+                        default: output += String.Format("Reactors: {0} kW / {1} kW\r\n", reactorStats["CurrentPower"], reactorStats["MaxPower"]); break;
+
+                    }
+                }
+                if (solar)
+                {
+                    double useage = solarStats["CurrentPower"] / solarStats["MaxPower"];
+                    int drawBar = (int)(screenAvailable * useage);
+
+                    for (int i = 0; i < screenAvailable; i++)
+                    {
+                        if (i < drawBar) { bar += drawChar[0]; } else { bar += drawChar[1]; }
+                    }
+
+                    switch (displaySelector)
+                    {
+                        case 0: output += String.Format("Solar Panels: \r\n[{0}] {1} kW / {2} kW\r\n", bar, solarStats["CurrentPower"], solarStats["MaxPower"]); break;
+                        case 1:
+                        default: output += String.Format("Solar Panels: {0} kW / {1} kW\r\n", solarStats["CurrentPower"], solarStats["MaxPower"]); break;
+
+                    }
+                }
+                if (battery)
+                {
+                    double useage = batteryStats["CurrentPower"] / batteryStats["MaxPower"];
+                    int drawBar = (int)(screenAvailable * useage);
+
+                    for (int i = 0; i < screenAvailable; i++)
+                    {
+                        if (i < drawBar) { bar += drawChar[0]; } else { bar += drawChar[1]; }
+                    }
+
+                    switch (displaySelector)
+                    {
+                        case 0: output += String.Format("Batteries: \r\n [{0}] {1} kW / {2} kW\r\n Stored: {3} \r\n Recharging: {4}", bar, batteryStats["CurrentPower"], batteryStats["MaxPower"], batteryStats["StoredPower"], bat[0].GetValue<bool>("Recharge")); break;
+                        case 1:
+                        default: output += String.Format("Batteries: {0} kW / {1} kW\r\n Stored: {2} \r\n Recharging: {3}", batteryStats["CurrentPower"], batteryStats["MaxPower"], batteryStats["StoredPower"], bat[0].GetValue<bool>("Recharge")); break;
+
+                    }
+                }
+
+                return output;
+            }
+
             public double convertPower(double value, string powerFrom, string powerTo)
             {
                 switch (powerFrom)
@@ -1445,18 +1525,18 @@ namespace IngameScript
                     else
                     {
 
-                        double preFuel = double.TryParse(reactorFuel["FuelLevel"][1], out double fuelLevel) ? fuelLevel : 0D;
+                        double preFuel = double.TryParse(reactorFuel["FuelLevel"][0], out double fuelLevel) ? fuelLevel : 0D;
                         double rate = preFuel - fuel;
 
-                        DateTime time1 = DateTime.TryParse(reactorFuel["Timestamp"][1], out DateTime t1) ? t1 : DateTime.Now;
+                        DateTime time1 = DateTime.TryParse(reactorFuel["Timestamp"][0], out DateTime t1) ? t1 : DateTime.Now;
                         TimeSpan span = now - time1;
 
                         double fuelUsage = rate / span.TotalSeconds;
 
 
                         reactorFuel["Timestamp"].Insert(0, now.ToString());
-                        reactorFuel["FuelLevel"].Insert(0, fuel.ToString());
-                        reactorFuel["DepletionRate"].Insert(0, fuelUsage.ToString());
+                        reactorFuel["FuelLevel"].Insert(0, fuel.ToString() + " kg Uranium");
+                        reactorFuel["DepletionRate"].Insert(0, fuelUsage.ToString() + " kg Uranium/sec");
                     }
 
                     return true;
@@ -1464,6 +1544,38 @@ namespace IngameScript
                 catch (Exception e)
                 {
                     PMeventLog.Add(e.Message);
+                    return false;
+                }
+            }
+
+            public bool addSolarPowerReading()
+            {
+                try
+                {
+                    DateTime now = DateTime.Now;
+                    if (solarRecord["Timestamp"].Count < 2)
+                    {
+                        solarRecord["Timestamp"].Insert(0, now.ToString());
+                        solarRecord["SolarInput"].Insert(0, solarStats["CurrentPower"].ToString());
+                        solarRecord["SolarRate"].Insert(0, "0.0");
+                    }
+                    else
+                    {
+                        DateTime time1 = DateTime.TryParse(solarRecord["Timestamp"][0], out DateTime t) ? t : DateTime.Now;
+                        TimeSpan span = now - time1;
+
+                        double sOutput1 = double.TryParse(solarRecord["SolarInput"][0], out double s) ? s : 0;
+                        sOutput1 -= solarStats["CurrentPower"];
+
+                        solarRecord["Timestamp"].Insert(0, now.ToString());
+                        solarRecord["SolarInput"].Insert(0, solarStats["CurrentPower"].ToString());
+                        solarRecord["SolarRate"].Insert(0, sOutput1.ToString());
+                    }
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    PMeventLog.Add("AddSolarPowerReading Error: " + e.Message);
                     return false;
                 }
             }
@@ -1490,6 +1602,8 @@ namespace IngameScript
                     return false;
                 }
             }
+
+            //public bool manageSolar() {}
 
             public double getStats(Dictionary<string, double> d, string key)
             {
